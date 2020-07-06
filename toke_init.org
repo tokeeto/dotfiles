@@ -58,7 +58,7 @@
 	          keyfreq
 	          magit
 	          multiple-cursors
-		        dired-narrow
+		  dired-narrow
 	          powerline
 	          projectile
 	          rainbow-mode
@@ -73,7 +73,7 @@
 	          yasnippet
 		  elpy
 		  flycheck
-	          zenburn-theme
+		  zenburn-theme
 		  monokai-theme
 		  material-theme
             )))
@@ -491,7 +491,7 @@
   Taken directly from macoy files
   #+BEGIN_SRC emacs-lisp
   ;; Imenu Ido interface (browse symbols in file)
-  (global-set-key (kbd "C-]") 'idomenu)
+  (global-set-key (kbd "C-r") 'idomenu)
 
   ;; Templates/Snippets
   (yas-global-mode 1)
@@ -993,8 +993,7 @@
   (global-set-key (kbd "C-S-s") 'write-file)
 
   ;; Find. was forward-char
-  ;; Replaced by swiper above
-  ;;(global-set-key (kbd "C-f") 'isearch-forward)
+  (global-set-key (kbd "C-f") 'isearch-forward)
 
   ;; Switch buffers. Was backward-char
   (global-set-key (kbd "C-b") 'ido-switch-buffer)
@@ -1017,9 +1016,6 @@
 
   ;; Revert buffer
   (global-set-key (kbd "<f5>") 'revert-buffer)
-
-  ;; Kill line like Sublime
-  (global-set-key (kbd "C-S-k") 'kill-whole-line)
 
   ;; Toggle comment lines (same keybind as Sublime). This also works for regions
   (global-set-key (kbd "C-'") 'comment-line)
@@ -1048,9 +1044,9 @@
   (global-set-key (kbd "C-u") 'simpleclip-cut) ;; Actually C-x after keyboard-translate
   (global-set-key (kbd "C-v") 'simpleclip-paste)
 
-  ;; point-to-register and jump-to-register (was reverse search)
-  (global-set-key (kbd "C-r") 'jump-to-register)
-  (global-set-key (kbd "C-S-r") 'point-to-register)
+  ;; jump to function (was reverse search)
+  (global-set-key (kbd "C-r") 'imenu)
+
   ;; copy-to-register and insert-register
   (global-set-key (kbd "M-r") 'insert-register)
   (global-set-key (kbd "M-R") 'copy-to-register)
@@ -1245,8 +1241,16 @@
   (interactive "*p")
   (move-text-internal (- arg)))
 
-  (global-set-key [(control shift up)]  'move-text-up)
-  (global-set-key [(control shift down)]  'move-text-down)
+(global-set-key [(control shift up)]  'move-text-up)
+(global-set-key [(control shift down)]  'move-text-down)
+
+(setq org-support-shift-select 't)
+
+;; Escape as cancel button, was modifier
+(global-set-key (kbd "<escape>") 'keyboard-escape-quit)
+
+;; Ctrl-g as Goto-line, was Quit
+(global-set-key (kbd "C-g") 'goto-line)
 
 #+END_SRC
 
@@ -1292,7 +1296,7 @@
   ;; Powerline: nicer status bar
   ;;
   (require 'powerline)
-  (setq powerline-default-separator 'slant)
+  (setq powerline-default-separator 'arrow)
   (setq powerline-display-hud nil)
   (setq powerline-display-buffer-size nil)
   (setq powerline-display-mule-info nil)
@@ -1475,12 +1479,22 @@
   (when (require 'flycheck nil t)
     (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
     (add-hook 'elpy-mode-hook 'flycheck-mode))
+
+  (setq-default indent-tabs-mode t)
+  (setq-default tab-width 4)
+  (setq indent-line-function #'insert-tab)
+  (setq python-indent-guess-indent-offset t)
 #+END_SRC
+
 * TODO
   + Keybindings missing
+    C-g: goto line, (but cancel?)
+    S-tab: un-indent current line
+    bindins fucked in terminal
   + Functionality   - and
-    test
+    allow browsing methods
+    - look into icicles-imenu
   + other
     Default window layout?
-    fix fucking org-mode - it's actu
+    fix fucking org-mode - it's actual good, just fix the bindings
  
