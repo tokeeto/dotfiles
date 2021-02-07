@@ -1,336 +1,196 @@
 * Startup
-  #+BEGIN_SRC emacs-lisp
-  (require 'package)
-  (setq package-enable-at-startup nil)
-  (add-to-list 'package-archives
-    '("melpa" . "https://melpa.org/packages/"))
-  (package-initialize)
-
-  ;; Bootstrap `use-package'
-  (unless (package-installed-p 'use-package)
-    (package-refresh-contents)
-    (package-install 'use-package))
-#+END_SRC
-
-* Enabled MELPA
-  #+BEGIN_SRC emacs-lisp 
-	;; Handle installing packages
-
-	(require 'seq)
-
-	;; Enable MELPA
-	(require 'package)
-	(let* ((no-ssl (and (memq system-type '(windows-nt ms-dos))
-	                    (not (gnutls-available-p))))
-	       (proto (if no-ssl "http" "https")))
-	  ;; Comment/uncomment these two lines to enable/disable MELPA and MELPA Stable as desired
-	  (add-to-list 'package-archives (cons "melpa" (concat proto "://melpa.org/packages/")) t)
-	  ;;(add-to-list 'package-archives (cons "melpa-stable" (concat proto "://stable.melpa.org/packages/")) t)
-	  (when (< emacs-major-version 24)
-	    ;; For important compatibility libraries like cl-lib
-	    (add-to-list 'package-archives '("gnu" . (concat proto "://elpa.gnu.org/packages/")))))
+#+BEGIN_SRC emacs-lisp
+    (setq inhibit-startup-message t)
 #+END_SRC
 
 * Packages
   #+BEGIN_SRC emacs-lisp 
-	(defun toke-package-install (package)
-	  (message "Installing %s" package)
-	  (package-install package))
+(require 'package)
 
-	;; Install uninstalled packages
-	(let* ((package--builtins nil)
-	       (packages
-	        '(ag
-	          auto-complete
-	          avy
-	          better-defaults
-	          csharp-mode
-	          diminish
-	          engine-mode
-	          expand-region
-	          flx-ido
-	          htmlize
-	          ido-vertical-mode
-	          ido-completing-read+
-	          ivy
-	          ivy-xref
-	          iy-go-to-char
-	          keyfreq
-	          magit
-	          multiple-cursors
-		  dired-narrow
-	          powerline
-	          projectile
-	          rainbow-mode
-	          simpleclip
-	          smart-tabs-mode
-	          smex
-	          smooth-scrolling
-	          ;; sublime-themes
-	          swiper ;; TODO Remove
-	          web-beautify
-	          web-mode
-	          yasnippet
-		  elpy
-		  flycheck
-		  zenburn-theme
-		  monokai-theme
-		  material-theme
-            )))
-	  (ignore-errors
-	    (message "Checking for packages to install...")
-	    (let ((packages (seq-remove 'package-installed-p packages)))
-	      (when packages
-	        (message "Installing packages...")
-	        (package-refresh-contents)
-	        (mapc 'toke-package-install packages)))))
+(setq package-archives '(("melpa" . "https://melpa.org/packages/")
+                         ("org" . "https://orgmode.org/elpa/")
+                         ("elpa" . "https://elpa.gnu.org/packages/")))
+
+(package-initialize)
+(unless package-archive-contents
+ (package-refresh-contents))
+
+;; Initialize use-package on non-Linux platforms
+(unless (package-installed-p 'use-package)
+   (package-install 'use-package))
+
+(require 'use-package)
+(setq use-package-always-ensure t)
+
+	(use-package ivy
+	  :diminish
+	  :bind (("C-F" . swiper)
+          :map ivy-minibuffer-map
+            ("TAB" . ivy-alt-done)
+            ("C-l" . ivy-alt-done)
+            ("C-j" . ivy-next-line)
+            ("C-k" . ivy-previous-line)
+          :map ivy-switch-buffer-map
+            ("C-k" . ivy-previous-line)
+            ("C-l" . ivy-done)
+            ("C-d" . ivy-switch-buffer-kill)
+          :map ivy-reverse-i-search-map
+            ("C-k" . ivy-previous-line)
+            ("C-d" . ivy-reverse-i-search-kill))
+	  :config
+	    (ivy-mode 1)
+	)
+
+	(use-package doom-modeline
+	  :init (doom-modeline-mode 1)
+	  :custom ((doom-modeline-height 15))
+	)
+
+(use-package rainbow-delimiters
+  :hook (prog-mode . rainbow-delimiters-mode))
+
+(use-package which-key
+  :init (which-key-mode)
+  :diminish which-key-mode
+  :config
+  (setq which-key-idle-delay .2))
+
+(use-package ivy-rich
+  :init
+  (ivy-rich-mode 1))
+
+(use-package counsel
+  :bind (("M-x" . counsel-M-x)
+         ("C-x b" . counsel-ibuffer)
+         ("C-x C-f" . counsel-find-file)
+         :map minibuffer-local-map
+         ("C-r" . 'counsel-minibuffer-history)))
+
+(use-package helpful
+  :custom
+  (counsel-describe-function-function #'helpful-callable)
+  (counsel-describe-variable-function #'helpful-variable)
+  :bind
+  ([remap describe-function] . counsel-describe-function)
+  ([remap describe-command] . helpful-command)
+  ([remap describe-variable] . counsel-describe-variable)
+  ([remap describe-key] . helpful-key))
+
+
+(global-unset-key (kbd "C-SPC"))
+(use-package general
+  :config
+  (general-create-definer ivo/leader-keys
+    :prefix "C-SPC")
+
+  (ivo/leader-keys
+    "t"  '(:ignore t :which-key "toggles")
+    "tt" '(counsel-load-theme :which-key "choose theme")))
+
+(use-package projectile
+  :diminish projectile-mode
+  :config (projectile-mode)
+  :custom ((projectile-completion-system 'ivy))
+  :bind-keymap ("C-c p" . projectile-command-map)
+  :init
+  ;; NOTE: Set this to the folder where you keep your Git repos!
+  (when (file-directory-p "~/workspace")
+    (setq projectile-project-search-path '("~/workspace")))
+  (setq projectile-switch-project-action #'projectile-dired))
+
+(use-package counsel-projectile
+  :config (counsel-projectile-mode))
+
 #+END_SRC
 
-* Modern standards
-  Allows for humane copy-paste behavior, while moving some emacs defaults around
-  ... welcome to the 21st century
+* Theme
   #+BEGIN_SRC emacs-lisp
-	(keyboard-translate ?\C-u ?\C-x)
-	(keyboard-translate ?\C-x ?\C-u)
-	(keyboard-translate ?\C-y ?\C-c)
-	(keyboard-translate ?\C-c ?\C-y)
-
 	(setq-default truncate-lines t)
 
 	;(load-theme 'material t)            ;; Load material theme
-	(load-theme 'monokai t)
+	(setq visible-bell t)
+	(set-face-attribute 'default nil :font "Victor Mono" :height 110)
+	;;(load-theme 'wombat t)
+	(use-package doom-themes)
+	(load-theme 'doom-dracula t)
 	(global-linum-mode t)               ;; Enable line numbers globally
+
+	;; Org Mode Configuration ------------------------------------------------------
+	(defun efs/org-font-setup ()
+	;; Set faces for heading levels
+	  (dolist (face '((org-level-1 . 1.2)
+          (org-level-2 . 1.1)
+          (org-level-3 . 1.05)
+          (org-level-4 . 1.0)
+          (org-level-5 . 1.1)
+          (org-level-6 . 1.1)
+          (org-level-7 . 1.1)
+          (org-level-8 . 1.1)))
+	   )
+
+    ;; Ensure that anything that should be fixed-pitch in Org files appears that way
+    (set-face-attribute 'org-block nil :foreground nil :inherit 'fixed-pitch)
+	(set-face-attribute 'org-code nil   :inherit '(shadow fixed-pitch))
+	(set-face-attribute 'org-table nil   :inherit '(shadow fixed-pitch))
+	(set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
+	(set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
+	(set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
+	(set-face-attribute 'org-checkbox nil :inherit 'fixed-pitch))
+
+(use-package org
+  :hook (org-mode . efs/org-mode-setup)
+  :config
+  (setq org-ellipsis " ▾"
+        org-hide-emphasis-markers t)
+  (efs/org-font-setup))
+
+(use-package org-bullets
+  :after org
+  :hook (org-mode . org-bullets-mode)
+  :custom
+  (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
+
+(defun efs/org-mode-visual-fill ()
+  (setq visual-fill-column-width 100
+        visual-fill-column-center-text t)
+  (visual-fill-column-mode 1))
+
+(use-package visual-fill-column
+  :hook (org-mode . efs/org-mode-visual-fill))
 #+END_SRC
 
 * Core settings
-  imported directly from macoy files
   #+BEGIN_SRC emacs-lisp 
-  ;; After having troubles with Windows 10 writing CRLF, I'm going to try this
-  ;; Always prefer UTF-8
-  (prefer-coding-system 'utf-8)
-  
-  ;; Some settings from http://ergoemacs.org/emacs/emacs_make_modern.html
-  
+  ;; enable CUA mode (ctrl-c/v/x/z for copy, paste, cut, undo
+  ;; use shift+ctrl+ c/v/x/z for standard emacs behavior
+  (cua-mode t)
+  (setq cua-keep-region-after-copy t) ;; Standard Windows behaviour
+0
   ;; make cursor movement stop in between camelCase words. (don't)
   (global-subword-mode 0)
-  
-  ;; No beeping on windows
-  (setq ring-bell-function 'ignore)
-  
+
   ;; Always highlight matching parenthesis. This is a necessity when using multiple-cursors because
   ;;  if show-paren-mode is disabled, typing multiple closing parentheses takes a long time due to
   ;;  the pause to highlight after each one
   (show-paren-mode 1)
-  
+
   ;; make typing delete/overwrite selected text
   (delete-selection-mode 1)
-  
+
   ;; remember cursor position, for emacs 25.1 or later
   (save-place-mode 1)
-  
-  ;; Make garbage collection happen less often (https://github.com/lewang/flx)
-  ;; (setq gc-cons-threshold 20000000)
-  ;; Another idea:
-  ;; http://bling.github.io/blog/2016/01/18/why-are-you-changing-gc-cons-threshold/
-  ;; These are tricky: the higher, the more responsive flx ido is, but the slower it takes on minibuffer exit
-  (defun my-minibuffer-setup-hook ()
-    ;; (setq gc-cons-threshold most-positive-fixnum))
-    ;; (setq gc-cons-threshold 20000000))
-    (setq gc-cons-threshold 80000000))
-  
-  (defun my-minibuffer-exit-hook ()
-    (setq gc-cons-threshold 800000))
-  
-  (add-hook 'minibuffer-setup-hook #'my-minibuffer-setup-hook)
-  (add-hook 'minibuffer-exit-hook #'my-minibuffer-exit-hook)
-  
-  ;; Don't warn on large files (I have very big TAGS)
-  (setq large-file-warning-threshold 90000000)
-  
-  ;; stop creating those backup~ files
-  ;; TODO: Use https://www.emacswiki.org/emacs/BackupEachSave etc. instead (the below code doesn't
-  ;; save a backup every time you save the buffer)
-  (setq make-backup-files nil)
-  ;; (setq make-backup-files t)
-  ;; (when make-backup-files
-  ;;   (setq
-  ;;    ; Backup version-controlled files
-  ;;    vc-make-backup-files t
-  ;;    ; don't clobber symlinks
-  ;;    backup-by-copying t
-  ;;    backup-directory-alist
-  ;;    ; don't litter my fs tree
-  ;;     '(("." . "~/.macoy-emacs-backups/"))
-  ;;    delete-old-versions t
-  ;;    kept-new-versions 6
-  ;;    kept-old-versions 2
-  ;;    ; use versioned backups
-  ;;    version-control t))
-  
-  ;; stop creating those #auto-save# files
-  (setq auto-save-default nil)
-  
-  ;; Don't create lock files
-  (setq create-lockfiles nil)
-  
+
   ;; Automatically revert buffers if file changes underneath (unless there are unsaved changes)
   (global-auto-revert-mode 1)
-  
-  (defun macoy-kill-transient-buffers ()
-    "Auto kill buffers which aren't important to let hang around. You shouldn't run this while using things which use these buffers!"
-    (interactive)
-    ;; TODO: Make sure dependent buffers aren't broken when this happens!
-    (setq macoy-buffers-to-kill (list
-                                 "*Backtrace*"
-                                 "*CTags-out*"
-                                 "*Calc Trail*"
-                                 "*Calculator*"
-                                 "*Codesearch*"
-                                 "*Codesearch-Index*"
-                                 "*Compile-Log*"
-                                 "*Completions*"
-                                 "*Diff*"
-                                 "*Ediff Registry*"
-                                 "*Gimme-checkout*"
-                                 "*Gimme-GetLatest*"
-                                 "*Help*"
-                                 "*Packages*"
-                                 "*ag search*"
-                                 "*compilation*"
-                                 "*log-edit-files*"
-                                 "*svn output*"
-                                 "*vc-change-log*"
-                                 "*vc-diff*"
-                                 "*xref*"
-                                 "*Macoy-Select-Search*"
-                                 "*Occur*"
-                                 ))
-    (mapcar
-     (lambda (buffer-to-kill)
-       (when (get-buffer buffer-to-kill)
-         (kill-buffer buffer-to-kill)))
-     macoy-buffers-to-kill))
-  
-  (defun macoy-bury-buffer-anywhere (buffer-or-name)
-    "Bury all windows showing BUFFER-OR-NAME.
-  BUFFER-OR-NAME may be a buffer or the name of an existing buffer
-  and defaults to the current buffer. For example, 
-  (macoy-bury-buffer-anywhere \"*Compile-Log*\") 
-  would dismiss the compile log, if it was visible"
-    (let ((buffer (window-normalize-buffer buffer-or-name))
-          ;; Handle the "inverted" meaning of the FRAME argument wrt other
-          ;; `window-list-1' based function.
-          (all-frames t))
-      (dolist (window (window-list-1 nil nil all-frames))
-        (when (eq (window-buffer window) buffer)
-          (switch-to-prev-buffer window)))))
-  
+
   ;; Store recently opened files so we can easily reopen them
   (recentf-mode 1)
   ;; Store more recent files
   (setq recentf-max-saved-items 100)
-  
-  ;; Smex: Smart M-x completion
-  (when (require 'smex)
-    (smex-initialize)
-    (global-set-key (kbd "M-x") 'smex)
-    (global-set-key (kbd "M-X") 'smex-major-mode-commands)
-    ;; This is your old M-x.
-    (global-set-key (kbd "C-M-x") 'execute-extended-command)
-    )
-  
-  ;; Ido enable (this might be unnecessary as Emacs comes with it by default now)
-  (when (require 'ido)
-    (ido-mode t)
-    ;; Ido display vertically (closer to Sublime)
-    (ido-vertical-mode 1)
-    ;; Ido vertical use up and down to navigate options, left-right for history/directories
-    (setq ido-vertical-define-keys 'C-n-C-p-up-down-left-right)
-    ;; Don't try searching other directories when there are no matches
-    (setq ido-auto-merge-work-directories-length -1)
-  
-    ;; Ido flx settings: make ido have fuzzy sublime-like matching
-    (when (require 'flx-ido)
-      (ido-mode 1)
-      (ido-everywhere 1)
-      (flx-ido-mode 1)
-      ;; disable ido faces to see flx highlights.
-      (setq ido-enable-flex-matching t)
-      (setq ido-use-faces nil)
-      )
-  
-    (setq ido-everywhere t)
-    
-    ;; No really, do ido everywhere
-    (when (require 'ido-completing-read+)
-      (ido-ubiquitous-mode 1))
-  
-    ;; Use ido for recentf file selection
-    ;; From https://masteringemacs.org/article/find-files-faster-recent-files-package
-    (defun ido-recentf-open ()
-      "Use `ido-completing-read' to \\[find-file] a recent file"
-      (interactive)
-      (find-file (ido-completing-read "Find recent file: " recentf-list))
-      )
-    (global-set-key (kbd "C-S-t") 'ido-recentf-open)
-    )
-  
-  ;; Projectile: this does "project" stuff like quick find https://github.com/bbatsov/projectile
-  ;; C-p for ctrl-p-like find
-  (when (require 'projectile)
-    ;; Ignore autogenerated files. Doesn't work. I used customize-group projectile for ignored dirs
-    ;;  which can be found near the bottom of this file
-    (setq projectile-globally-ignored-files
-          (append '("*_ast.*")
-                  projectile-globally-ignored-files))
-    (setq projectile-globally-ignored-directories
-          (append '("AutoGen"
-                    "3rdparty"
-                    "obj140"
-                    ".build"
-                    ".cquery_cached_index")
-                  projectile-globally-ignored-files))
-    (projectile-mode 1)
-  
-    ;; Make projectile mode-line more minimal
-    ;; TODO: Make this work based on version!
-    (defun macoy-projectile-mode-line ()
-      (format " [%s]" (projectile-project-name)))
-    (setq projectile-mode-line-function 'macoy-projectile-mode-line)
-    ;; Older version syntax
-    ;; (setq projectile-mode-line '(:eval (format " [%s]" (projectile-project-name))))
-    )
-  ;;
-  ;; File-related shortcuts
-  ;;
-  
-  (when (require 'simpleclip)
-    (defun macoy-copy-buffer-filename-to-clipboard ()
-      (interactive)
-      (simpleclip-set-contents buffer-file-name))
-    )
-  
-  ;; Open file in explorer
-  (defun browse-file-directory ()
-    "Open the current file's directory however the OS would."
-    (interactive)
-    (if default-directory
-        (browse-url-of-file (expand-file-name default-directory))
-      (error "No `default-directory' to open")))
-  
-  (global-set-key (kbd "<f10>") 'browse-file-directory)
-  
-  ;; Open marked path
-  (defun macoy-open-marked-path-file ()
-    "Open the path in region."
-    (interactive)
-    (when (use-region-p)
-      (find-file (buffer-substring (region-beginning) (region-end)))))
-  
+
   ;;
   ;; Tabs and indentation
   ;;
-  
   ;; Delete tabs instead of converting them to spaces
   (setq backward-delete-char-untabify-method nil)
   ;; From https://dougie.io/emacs/indentation (with some modifications
@@ -338,659 +198,48 @@
   (defun disable-tabs ()
     (interactive)
     (setq indent-tabs-mode nil))
-  
+
   (defun enable-tabs ()
     (interactive)
     ;; (local-set-key (kbd "TAB") 'tab-to-tab-stop)
     (setq indent-tabs-mode t)
     (setq tab-width 4))
-  
+
   ;; Hooks to Enable Tabs
   (add-hook 'c-mode-hook 'enable-tabs)
   (add-hook 'c++-mode-hook 'enable-tabs)
   (add-hook 'lua-mode-hook 'enable-tabs)
   (add-hook 'python-mode-hook 'enable-tabs)
-  
-  ;; Hooks to Disable Tabs
   (add-hook 'lisp-mode-hook 'disable-tabs)
   (add-hook 'emacs-lisp-mode-hook 'disable-tabs)
 #+END_SRC
 
-* Desktop Management
-  imported directly from macoy files
-  #+BEGIN_SRC emacs-lisp 
-  ;; save/restore opened files
-  (desktop-save-mode 1)
-
-  ;; This is needed only for theming. Desktop frames hold on to color values for some reason. We don't
-  ;;  care too much about losing our frame configurations so this is okay
-  (setq desktop-restore-frames nil)
-
-  ;; Lazy load buffers instead of loading them all at once (which takes too long)
-  (setq desktop-restore-eager 4)
-
-  ;; Used to know whether or not to show the last selected desktop at the top of the desktop list
-  (setq macoy-has-ever-selected-desktop-this-session nil)
-
-  (defcustom macoy-selected-desktop nil
-    "The last selected desktop. This is used to load the most recent desktop when starting Emacs")
-
-  ;;
-  ;; Faster desktop creation/switching
-  ;;
-  (setq macoy-desktop-dir "~/.emacs.d/macoy-desktops/")
-  (unless (file-exists-p macoy-desktop-dir)
-    (make-directory macoy-desktop-dir))
-
-  (defun macoy-save-desktop (new-desktop-name)
-    "Save a desktop to the desktop registry for easy switching"
-    (interactive "sNew desktop name: ")
-    (let ((new-desktop (concat macoy-desktop-dir new-desktop-name)))
-      (make-directory new-desktop)
-      (desktop-save new-desktop)
-      (customize-save-variable 'macoy-selected-desktop new-desktop)
-      (message "Created desktop at %s" new-desktop)
-      (setq macoy-has-ever-selected-desktop-this-session t)))
-
-  (defun macoy-get-desktop-list ()
-    (let ((desktop-list (remove "."
-                                (remove ".."
-                                        (directory-files macoy-desktop-dir)))))
-      ;; If we've never picked a desktop this session, put the last used desktop at the top of the
-      ;; list. This is a workaround while I don't know how to make my desktop switch happen after
-      ;; the regular emacs behavior picks the desktop during startup.
-      (if (and (not macoy-has-ever-selected-desktop-this-session)
-               macoy-selected-desktop)
-          (progn
-            (setq desktop-list (remove (file-name-nondirectory macoy-selected-desktop) desktop-list))
-            (add-to-list 'desktop-list (file-name-nondirectory macoy-selected-desktop)))
-        desktop-list)))
-
-  (defun macoy-switch-desktop ()
-    "Use ido to list desktops to switch to"
-    (interactive)
-    (let ((selected-desktop
-           (concat macoy-desktop-dir
-                   (ido-completing-read "Switch Desktop: "
-                                        (macoy-get-desktop-list)))))
-      (message "%s" selected-desktop)
-      (customize-save-variable 'macoy-selected-desktop selected-desktop)
-      (desktop-change-dir selected-desktop)
-      (setq macoy-has-ever-selected-desktop-this-session t)))
-
-  (defun macoy-reload-last-desktop ()
-    "Load the last desktop which was saved or switched to via the macoy-desktop system"
-    (interactive)
-    (desktop-change-dir macoy-selected-desktop)
-    (message "Restored desktop %s" macoy-selected-desktop)
-    (setq macoy-has-ever-selected-desktop-this-session t))
-
-  (global-set-key (kbd "M-b") 'macoy-reload-last-desktop)
-#+END_SRC
-
-* Code formatting
-  Taken directly from macoy files
-  #+BEGIN_SRC emacs-lisp
-
-  #+END_SRC
-
-* Idomenu
-  A direct copy of idomenu
-  #+BEGIN_SRC emacs-lisp
-  (require 'ido)
-  (require 'imenu)
-
-  (defun idomenu--guess-default (index-alist symbol)
-    "Guess a default choice from the given symbol."
-    (catch 'found
-      (let ((regex (concat "\\_<" (regexp-quote symbol) "\\_>")))
-        (dolist (item index-alist)
-          (if (string-match regex (car item)) (throw 'found (car item)))))))
-
-  (defun idomenu--read (index-alist &optional prompt guess)
-    "Read a choice from an Imenu alist via Ido."
-    (let* ((symatpt (thing-at-point 'symbol))
-           (default (and guess symatpt (idomenu--guess-default index-alist symatpt)))
-           (names (mapcar 'car index-alist))
-           (name (ido-completing-read (or prompt "imenu ") names
-                                      nil t nil nil default))
-           (choice (assoc name index-alist)))
-      (if (imenu--subalist-p choice)
-          (idomenu--read (cdr choice) prompt nil)
-        choice)))
-
-  (defun idomenu--trim (str)
-    "Trim leading and tailing whitespace from STR."
-    (let ((s (if (symbolp str) (symbol-name str) str)))
-      (replace-regexp-in-string "\\(^[[:space:]\n]*\\|[[:space:]\n]*$\\)" "" s)))
-
-  (defun idomenu--trim-alist (index-alist)
-    "There must be a better way to apply a function to all cars of an alist"
-    (mapcar (lambda (pair) (cons (idomenu--trim (car pair)) (cdr pair)))
-      index-alist))
-
-  ;;;###autoload
-  (defun idomenu ()
-    "Switch to a buffer-local tag from Imenu via Ido."
-    (interactive)
-    ;; ido initialization
-    (ido-init-completion-maps)
-    (add-hook 'minibuffer-setup-hook 'ido-minibuffer-setup)
-    (add-hook 'choose-completion-string-functions 'ido-choose-completion-string)
-    (add-hook 'kill-emacs-hook 'ido-kill-emacs-hook)
-    ;; set up ido completion list
-    (let ((index-alist (cdr (imenu--make-index-alist))))
-      (if (equal index-alist '(nil))
-          (message "No imenu tags in buffer")
-        (imenu (idomenu--read (idomenu--trim-alist index-alist) nil t)))))
-
-  (provide 'idomenu)
-#+END_SRC
-
-* Tags and Autocompletion
-  Taken directly from macoy files
-  #+BEGIN_SRC emacs-lisp
-  ;; Imenu Ido interface (browse symbols in file)
-  (global-set-key (kbd "C-r") 'idomenu)
-
-  ;; Templates/Snippets
-  (yas-global-mode 1)
-
-  ;; Don't prompt me to load tags
-  (setq tags-revert-without-query 1)
-
-  ;; This sets tags-table-list in macoy-ido-find-tag-refresh
-  (setq macoy-tags-files nil)
-
-  ;; Refresh and load tags
-  ;; TODO: Use projectile refresh ctags instead
-  (if (eq system-type 'gnu/linux)
-      (setq ctags-path "ctags")
-    (setq ctags-path "C:/programsMacoy/ctags58/ctags.exe"))
-
-  (defun generateTags-ProjectileRoot ()
-    "Create tags file"
-    ;; Doesn't do anything for start-process
-    ;;(let ((default-directory "F:/CJUNCTIONS/src/")))
-    (message "Running CTags")
-    (let ((ctagsProc (start-process "CTags" "*CTags-out*" ctags-path "-e" "-f"
-                                    ;; Output location
-                                    (concat (projectile-project-root) "TAGS")
-
-                                    ;; Additional arguments
-                                    "--verbose" "--recurse=yes" "--languages=C,C++,Python"
-                                    
-                                    ;; Annoyingly there doesn't seem to be wildcard matching for folders (at least
-                                    ;;  not on Windows)
-                                    "--exclude=/home/macoy/Development/code/3rdParty/repositories/blender/doc"
-
-                                    ;; Includes
-                                    (projectile-project-root) ;; HOME_ONLY
-                                    ;; "F:/CJUNCTIONS/src/Core"
-                                    )))
-      (set-process-sentinel ctagsProc
-                            (lambda (ctagsProc _string)
-                              (add-to-list 'macoy-tags-files (format "%s/TAGS" projectile-project-root))
-                              (call-interactively 'macoy-ido-find-tag-refresh)))))
-
-  (defun loadTagsFromParent ()
-    (let ((my-tags-file (locate-dominating-file default-directory "TAGS")))
-      (when my-tags-file
-        (message "Loading tags file: %s" my-tags-file)
-        (visit-tags-table my-tags-file))))
-
-  ;; Use Ivy to select xref results
-  (require 'ivy-xref)
-  (setq xref-show-xrefs-function 'ivy-xref-show-xrefs)
-
-  ;; This isn't really necessary because attempting a goto definition will automatically do this
-  ;;(global-set-key (kbd "C-<f5>") (lambda () (interactive) (loadTagsFromParent)))
-  (global-set-key (kbd "C-<f5>")
-                  (lambda ()
-                    (interactive)
-                    ;; Note that these are both subprocesses so they will run at the same time
-                    (generateTags-ProjectileRoot)
-                    (macoy-codesearch-index-default)))
-
-  ;; Tags keybinding
-  (global-set-key (kbd "<f12>") 'xref-find-definitions)
-  (global-set-key (kbd "M-S-g") 'xref-find-definitions)
-  (global-set-key (kbd "M-g") 'xref-find-definitions-other-window)
-  (global-set-key (kbd "C-;") 'xref-find-definitions-other-window)
-  (global-set-key (kbd "C-:") 'xref-find-definitions)
-  (global-set-key (kbd "S-<f12>") 'xref-find-apropos)
-  (global-set-key (kbd "C-S-d") 'macoy-ido-find-tag)
-
-  ;; Auto-complete
-  ;; This will at least work for local completions
-  (global-auto-complete-mode)
-  ;; Don't start auto-completion until three characters have been typed
-  ;; Performance becomes problematic with as many tags as I have so this is necessary
-  ;; See https://github.com/auto-complete/auto-complete/blob/master/doc/manual.md
-  (setq ac-auto-start 3)
-
-  ;; Custom fuzzy completion stuff
-  ;; (defun macoy-ido-example ()
-  ;;   "Test ido custom"
-  ;;   (interactive)
-  ;;   (setq mylist (list "red" "blue" "yellow" "clear" "i-dont-know"))
-  ;;   (ido-completing-read "What, ... is your favorite color? " mylist))
-
-  ;; Fuzzy find tag like Sublime's C-S-r
-  ;; Also used for auto-completion
-  ;; From https://www.emacswiki.org/emacs/InteractivelyDoThings#CompleteFindTagUsingIdo
-  (setq macoy-tag-names (list "empty (run macoy-ido-find-tag-refresh"))
-  (defun macoy-ido-find-tag-refresh ()
-    "Refresh ido tag list"
-    (interactive)
-    (message "Refreshing tags table")
-    (setq tags-table-list macoy-tags-files)
-    (message "%s" tags-table-list)
-    ;; tags-completion-table() early-outs if the table has already been created
-    ;; This is problematic if TAGS has changed
-    ;; Clearing it here ensures the table won't get out of sync
-    (when tags-completion-table
-      (setq tags-completion-table nil))
-    (tags-completion-table)
-
-    (message "Refreshing ido tags list")
-    ;; Reset to remove "empty" value as well as avoid duplicates
-    (setq macoy-tag-names nil)
-    (mapcar (lambda (x)
-              (push (prin1-to-string x t) macoy-tag-names))
-            tags-completion-table)
-    (message "Refreshing ido tags list done"))
-
-  (defun macoy-reset-tags ()
-    (interactive)
-    (setq tags-table-list macoy-tags-files)
-    ;; tags-completion-table() early-outs if the table has already been created
-    ;; This is problematic if TAGS has changed
-    ;; Clearing it here ensures the table won't get out of sync
-    (when tags-completion-table
-      (setq tags-completion-table nil))
-    (tags-completion-table))
-
-  (defun macoy-ido-find-tag ()
-    "Find a tag using ido"
-    (interactive)
-    (xref-find-definitions (ido-completing-read "Tag: " macoy-tag-names)))
-
-  ;; This doesn't actually help that much
-  (defun macoy-ido-find-tag-default-text (start-string)
-    "Find a tag using ido"
-    (interactive "sTag: ")
-    (xref-find-definitions (ido-completing-read "Tag: " macoy-tag-names nil nil start-string)))
-
-
-  ;; For reference (see https://github.com/auto-complete/auto-complete/blob/master/doc/manual.md)
-  ;; (defun mysource2-candidates ()
-  ;;   '("Foo" "Bar" "Baz" "macoyTest2" "what" "zoooo"))
-
-  ;; (defvar ac-source-mysource2
-  ;;   '((candidates . mysource2-candidates)))
-
-  (defvar ac-source-macoy-ido-tags
-    '(;;(init . macoy-ido-find-tag-refresh) ;; Commented because it runs every time (unnecessary)
-      (candidates . macoy-tag-names)
-      (cache)))
-
-  ;; Autocomplete from precompiled tags list (normal tags source is too slow)
-  ;; Make sure auto-complete knows about yasnippets
-  ;; From https://github.com/joaotavora/yasnippet/issues/336
-  (require 'auto-complete-config)
-  (setq-default ac-sources '(
-                             ac-source-yasnippet
-                             ac-source-words-in-same-mode-buffers
-                             ac-source-macoy-ido-tags
-                             ))
-
-  ;; (setq ac-candidate-limit nil)
-  ;; (setq ac-auto-show-menu nil)
-
-  ;; Alternate find file in project thing using tags
-  ;; If projectile isn't doing the trick, use tags instead
-  ;; From https://www.emacswiki.org/emacs/InteractivelyDoThings#CompleteFindTagUsingIdo
-  (defun macoy-ido-find-file-in-tag-files ()
-    (interactive)
-    (save-excursion
-      (let ((enable-recursive-minibuffers t))
-        (visit-tags-table-buffer))
-      (find-file
-       (expand-file-name
-        (ido-completing-read
-         "Project file: " (tags-table-files) nil t)))))
-
-  ;; Find references via tags-search. This is my find-references replacement
-  (defun macoy-tags-search ()
-    "Pick tag with `macoy-ido-find-tag' then run `tags-search' (or search marked)"
-    (interactive)
-    (if (use-region-p)
-        (tags-search (buffer-substring (region-beginning) (region-end)))
-      (tags-search (ido-completing-read "Tag: " macoy-tag-names))))
-
-  ;; Hippie Expand/DAbbrev settings
-  (setq hippie-expand-try-functions-list '(try-expand-dabbrev try-expand-dabbrev-all-buffers))
-  (global-set-key (kbd "M-SPC") 'set-mark-command)
-  (global-set-key (kbd "C-SPC") 'hippie-expand)
-
-  ;; Find references
-  (global-set-key (kbd "C-\\") 'macoy-tags-search)
-  (global-set-key (kbd "C-|") 'tags-loop-continue)
-
-
-  (defun macoy-tags-query-replace-marked (replacement)
-    (interactive (list
-                  (read-string (format "Replace %s with: "
-                                       (buffer-substring (region-beginning) (region-end))))))
-    
-    (tags-query-replace (buffer-substring (region-beginning) (region-end)) replacement))
-
-  (defun macoy-tags-query-replace ()
-    (interactive)
-    (if (use-region-p)
-        (call-interactively 'macoy-tags-query-replace-marked (buffer-substring (region-beginning) (region-end)))
-      (call-interactively 'tags-query-replace)))
-#+END_SRC
-
-* Syntaxes
-  #+BEGIN_SRC emacs-lisp
-  ;;
-  ;; Web tech
-  ;;
-
-  ;; This is for better syntax highlighting when editing templated web files (e.g. files with Nunjucks)
-  ;; Only enabled at work because I only need web mode for template stuff
-  (when (require 'web-mode)
-    ;; I like to manually enable rainbow-mode if I want to see colors (this might not work...)
-    (setq web-mode-enable-css-colorization nil)
-
-    ;; Associate web files with web-mode
-    (add-to-list 'auto-mode-alist '("\\.html?\\'" . web-mode))
-    (add-to-list 'auto-mode-alist '("\\.js?\\'" . web-mode))
-    (add-to-list 'auto-mode-alist '("\\.css?\\'" . web-mode))
-
-    ;; I use Nunjucks which is in the Django family
-    (setq web-mode-engines-alist
-          '(("django" . "\\.html\\'")
-            ("django" . "\\.js\\.")
-            ("django" . "\\.css\\.")))
-    )
-
-  ;; Doesn't work because these args aren't the right command
-  ;; (when (require 'web-beautify)
-  ;;   ;; Override this function so I can customize args. Why did they make it defconst...
-  ;;   (defconst macoy-web-beautify-args '("-f" "-t" "-"))
-  ;;   (defun web-beautify-get-shell-command (program)
-  ;;  "Join PROGRAM with the constant js-beautify args."
-  ;;  (mapconcat 'identity (append (list program) macoy-web-beautify-args) " "))
-  ;;   )
-#+END_SRC
-
-* Clipboard behavior
-  #+BEGIN_SRC emacs-lisp
-  ;;
-  ;; Custom multiple cursors cut/copy/paste handling
-  ;;
-  (when (and (require 'simpleclip) (require 'multiple-cursors))
-    ;; To replicate Sublime behavior, if copy or cut is executed, do the operation for the whole line.
-    ;; When pasting, paste that line above the current line, regardless of point position
-    (setq macoy-clipboard-no-selection-line-paste nil)
-    (setq macoy-multiple-cursors-buffers nil)
-    (setq macoy-mc-buffer-index 0)
-
-    ;;
-    ;; Internal, per-cursor cxp functions for multiple-cursors
-    ;;
-
-    (defun macoy-mc-copy ()
-    (interactive)
-    (if (use-region-p)
-      (progn (push (buffer-substring (region-beginning) (region-end)) macoy-multiple-cursors-buffers)
-           (setq macoy-clipboard-no-selection-line-paste nil))
-      ;; Nothing marked? Copy whole line
-      (progn
-      (push (buffer-substring (line-beginning-position) (line-end-position)) macoy-multiple-cursors-buffers)
-      (setq macoy-clipboard-no-selection-line-paste t))))
-
-    (defun macoy-mc-cut ()
-    (interactive)
-    (unless (use-region-p)
-      (push (buffer-substring (line-beginning-position) (line-end-position)) macoy-multiple-cursors-buffers)
-      ;; (kill-region (line-beginning-position) (line-end-position))
-      (kill-whole-line)
-      (setq macoy-clipboard-no-selection-line-paste t))
-
-    (when (use-region-p)
-      (push (buffer-substring (region-beginning) (region-end)) macoy-multiple-cursors-buffers)
-      (kill-region (region-beginning) (region-end))
-      (setq macoy-clipboard-no-selection-line-paste nil)))
-
-    ;; Respect macoy-clipboard-no-selection-line-paste
-    (defun macoy-simpleclip-paste ()
-    (interactive)
-    (if macoy-clipboard-no-selection-line-paste
-      (save-excursion
-        (progn
-        (back-to-indentation)
-        (newline)
-        (when (not (eq 'org-mode major-mode))(call-interactively 'indent-for-tab-command))
-        (previous-line)
-        (call-interactively 'simpleclip-paste)
-        ;; For some reason there is sometimes leftover whitespace after
-        (delete-trailing-whitespace (line-beginning-position) (line-end-position))
-        (when (not (eq 'org-mode major-mode))(call-interactively 'indent-for-tab-command))))
-      (call-interactively 'simpleclip-paste)))
-
-    (defun macoy-mc-paste ()
-    (interactive)
-    ;; Delete selected text before insert if necessary
-    (when (use-region-p)
-      (delete-region (region-beginning) (region-end)))
-    ;; If no macoy-multiple-cursors-buffers the user probably did a simple copy so paste that
-    (unless macoy-multiple-cursors-buffers
-      (call-interactively 'macoy-simpleclip-paste))
-    (when macoy-multiple-cursors-buffers
-      (if macoy-clipboard-no-selection-line-paste
-        (progn
-        (save-excursion
-          (back-to-indentation)
-          (newline)
-          (when (not (eq 'org-mode major-mode))(call-interactively 'indent-for-tab-command))
-          (previous-line)
-          (insert (nth macoy-mc-buffer-index macoy-multiple-cursors-buffers))
-          ;; For some reason there is sometimes leftover whitespace after
-          (delete-trailing-whitespace (line-beginning-position) (line-end-position))
-          (when (not (eq 'org-mode major-mode))(call-interactively 'indent-for-tab-command))))
-      (insert (nth macoy-mc-buffer-index macoy-multiple-cursors-buffers)))
-      ;; Set up next cursor buffer index
-      ;; Ensure we don't go out of range of the buffers
-      ;; Sublime's behavior is to just paste all buffers at all marks, so our solution is different here
-      (setq macoy-mc-buffer-index (min
-                     (+ macoy-mc-buffer-index 1)
-                     (- (length macoy-multiple-cursors-buffers) 1)))))
-
-    ;;
-    ;; Cxp functions at all cursors (uses internal functions)
-    ;;
-
-    ;; For versions newer than 25.3 or something :(
-    (defun string-join (sl delim)
-    (mapconcat 'identity sl delim))
-
-    (defun macoy-multiple-cursors-copy()
-    "Copy at multiple cursors using `macoy-multiple-cursors-buffers'"
-    (interactive)
-    (setq macoy-multiple-cursors-buffers nil)
-    (mc/for-each-cursor-ordered
-     (mc/execute-command-for-fake-cursor 'macoy-mc-copy cursor))
-    ;; Append happens in reverse
-    (setq macoy-multiple-cursors-buffers (reverse macoy-multiple-cursors-buffers))
-    ;; Adding newline isn't correct but emacs won't copy the newline. It is slightly more useful
-    ;;  to paste things with the newlines when collapsing multiple selections
-    (simpleclip-set-contents (string-join macoy-multiple-cursors-buffers "\n")))
-
-    (defun macoy-multiple-cursors-cut()
-    "Cut at multiple cursors using `macoy-multiple-cursors-buffers'"
-    (interactive)
-    (setq macoy-multiple-cursors-buffers nil)
-    (mc/for-each-cursor-ordered
-     (mc/execute-command-for-fake-cursor 'macoy-mc-cut cursor))
-    (setq macoy-multiple-cursors-buffers (reverse macoy-multiple-cursors-buffers))
-    ;; Adding newline isn't correct but emacs won't copy the newline. It is slightly more useful
-    ;;  to paste things with the newlines when collapsing multiple selections
-    (simpleclip-set-contents (string-join macoy-multiple-cursors-buffers "\n")))
-
-    (defun macoy-multiple-cursors-paste()
-    "Paste at multiple cursors using `macoy-multiple-cursors-buffers'"
-    (interactive)
-    (setq macoy-mc-buffer-index 0)
-    (mc/for-each-cursor-ordered
-     (mc/execute-command-for-fake-cursor 'macoy-mc-paste cursor)))
-
-    (defun macoy-test-multiple-cursors-print-list()
-    "Print buffers"
-    (interactive)
-    (message "%d in buffer" (length macoy-multiple-cursors-buffers))
-    (dolist (buffer macoy-multiple-cursors-buffers)
-      (message "Buffer: %s" buffer)))
-
-    ;;
-    ;; Internal, non-mc cx functions (to duplicate no region line copy behavior)
-    ;;
-
-    (defun macoy-nonmc-copy ()
-    (interactive)
-    (if (use-region-p)
-      (progn (simpleclip-set-contents (buffer-substring (region-beginning) (region-end)))
-           (setq macoy-clipboard-no-selection-line-paste nil))
-      ;; Nothing marked? Copy whole line
-      (progn (simpleclip-set-contents
-          (buffer-substring (line-beginning-position)
-                  (line-end-position)))
-         (setq macoy-clipboard-no-selection-line-paste t))))
-
-    (defun macoy-nonmc-cut ()
-    (interactive)
-    (unless (use-region-p)
-      (simpleclip-set-contents (buffer-substring (line-beginning-position) (line-end-position)))
-      ;; (kill-region (line-beginning-position) (line-end-position))
-      (kill-whole-line)
-      (setq macoy-clipboard-no-selection-line-paste t))
-    (when (use-region-p)
-      (simpleclip-cut (region-beginning) (region-end))
-      (setq macoy-clipboard-no-selection-line-paste nil)))
-
-    ;;
-    ;; Custom copy/cut/paste functions so one key can work for simpleclip and multiple-cursors
-    ;; Make sure to add these to mc/cmds-to-run-once and restart Emacs
-
-    (defun macoyCopy ()
-    (interactive)
-    ;; Clear buffers here in case they aren't using multiple cursors
-    ;; Then, if they paste in multiple-cursors-mode it will paste simpleclip
-    (setq macoy-multiple-cursors-buffers nil)
-    (if (bound-and-true-p multiple-cursors-mode)
-      (call-interactively 'macoy-multiple-cursors-copy) ;; Was kill-ring-save
-      (call-interactively 'macoy-nonmc-copy))
-    (when macoy-clipboard-no-selection-line-paste
-      (setq macoy-clipboard-no-selection-line-paste (simpleclip-get-contents))))
-
-    (defun macoyCut ()
-    (interactive)
-    ;; Clear buffers here in case they aren't using multiple cursors
-    ;; Then, if they paste in multiple-cursors-mode it will paste simpleclip
-    (setq macoy-multiple-cursors-buffers nil)
-    (if (bound-and-true-p multiple-cursors-mode)
-      (call-interactively 'macoy-multiple-cursors-cut) ;; Was kill-region
-      (call-interactively 'macoy-nonmc-cut))
-    (when macoy-clipboard-no-selection-line-paste
-      (setq macoy-clipboard-no-selection-line-paste (simpleclip-get-contents))))
-
-    (defun macoyPaste ()
-    (interactive)
-    ;; Something was put in the clipboard that wasn't a "No Selection" copy/cut (e.g. from an
-    ;; external program). Clear it so that it behaves normally
-    (when (and macoy-clipboard-no-selection-line-paste
-           (not (string-equal (simpleclip-get-contents)
-                    macoy-clipboard-no-selection-line-paste)))
-      (setq macoy-clipboard-no-selection-line-paste nil))
-
-    (if (bound-and-true-p multiple-cursors-mode)
-      (call-interactively 'macoy-multiple-cursors-paste) ;; Was yank
-      (call-interactively 'macoy-simpleclip-paste)))
-    )
-#+END_SRC
-
 * Keybindings
   #+BEGIN_SRC emacs-lisp
-  (defun macoy-add-edit-newline-before ()
-    "Create a new line before the current line and go to it"
-    (interactive)
-    (back-to-indentation)
-    (newline)
-    (call-interactively 'indent-for-tab-command)
-    (previous-line)
-    (back-to-indentation))
-
-  (defun macoy-add-edit-newline-after ()
-    "Create a new line after the current line and go to it"
-    (interactive)
-    (end-of-visual-line)
-    (newline)
-    (call-interactively 'indent-for-tab-command))
-
-  (global-set-key (kbd "C-<return>") 'macoy-add-edit-newline-after)
-  (global-set-key (kbd "S-<return>") 'macoy-add-edit-newline-before)
-  (global-set-key (kbd "C-S-<return>") 'macoy-add-edit-newline-before)
-
-  ;;
-  ;; Macoy's Keybind overrides
-  ;;
-  ;; Some come from http://ergoemacs.org/emacs/emacs_make_modern.html
-
   ;; Make it possible to easily input raw tabs instead of having to do C-q <tab>
-  (defun macoy-insert-tab ()
+  (defun ivo-insert-tab ()
     "Make it possible to easily input raw tabs instead of having to do C-q <tab>"
     (interactive)
     (insert "	"))
 
-  ;; Backtab is the same as S-<tab>
-  (global-set-key (kbd "<tab>") 'macoy-insert-tab)
-
-  ;; make {copy, cut, paste, undo} have {C-c, C-x, C-v, C-z} keys
-  ;;(cua-mode 1) (disabled in favor of simpleclip)
-
-  (global-set-key (kbd "C-z") 'undo)
+  (global-set-key (kbd "<tab>") 'ivo-insert-tab)
 
   ;; Ctrl shift P like sublime for commands
+  ;; Added alt P for console, was nil
   (global-set-key (kbd "C-S-p") 'smex)
-
-  ;; Save As. was nil
-  (global-set-key (kbd "C-S-s") 'write-file)
+  (global-set-key (kbd "M-p") 'smex)
 
   ;; Close. was kill-region
   (global-set-key (kbd "C-w") 'kill-this-buffer)
 
-  (defun macoy-mark-whole-buffer ()
-    "Save a register with start position in case the user wants to go back to where they were before
-   they marked the buffer"
-    (interactive)
-    ;; From Macoy's navigation.el
-    (macoy-save-place)
-    (call-interactively 'mark-whole-buffer))
-
   ;; Select All. was move-beginning-of-line
-  (global-set-key (kbd "C-a") 'macoy-mark-whole-buffer)
+  (global-set-key (kbd "C-a") 'mark-whole-buffer)
 
   ;; Open. was open-line
   (global-set-key (kbd "C-o") 'ido-find-file)
 
   ;; Save. was isearch-forward
   (global-set-key (kbd "C-s") 'save-buffer)
-
-  ;; Save As. was nil
-  (global-set-key (kbd "C-S-s") 'write-file)
 
   ;; Find. was forward-char
   (global-set-key (kbd "C-f") 'isearch-forward)
@@ -1001,21 +250,12 @@
   ;; Open ibuffer (good for killing many buffers)
   (global-set-key (kbd "M-w") 'kill-buffer)
 
-  ;; Switch desktops
-  (global-set-key (kbd "C-M-p") 'macoy-switch-desktop)
-
-  ;; Create desktop
-  (global-set-key (kbd "M-d") 'macoy-save-desktop)
-
   ;; Switch windows via ctrl tab
   (global-set-key (kbd "C-<tab>") 'other-window)
   (global-set-key (kbd "C-S-<tab>") 'previous-multiframe-window)
 
   ;; Find file in project (via projectile) was previous-line
   (global-set-key (kbd "C-p") 'projectile-find-file)
-
-  ;; Revert buffer
-  (global-set-key (kbd "<f5>") 'revert-buffer)
 
   ;; Toggle comment lines (same keybind as Sublime). This also works for regions
   (global-set-key (kbd "C-'") 'comment-line)
@@ -1034,42 +274,19 @@
     (call-interactively 'backward-kill-word)
     (subword-mode 0))
 
-  (global-set-key (kbd "M-S-<delete>") 'macoy-kill-subword)
-  (global-set-key (kbd "M-S-<backspace>") 'macoy-kill-subword-backward)
-
-  ;; Simpleclip cut copy paste (not sure if this is essential due to customize-group settings)
-  ;; These are also set in my-keys mode with macoyCopy functions for multiple-cursors support,
-  ;; overriding these defaults
-  (global-set-key (kbd "C-y") 'simpleclip-copy) ;; Actually C-c after keyboard-translate
-  (global-set-key (kbd "C-u") 'simpleclip-cut) ;; Actually C-x after keyboard-translate
-  (global-set-key (kbd "C-v") 'simpleclip-paste)
+  (global-set-key (kbd "M-<delete>") 'macoy-kill-subword)
+  (global-set-key (kbd "M-<backspace>") 'macoy-kill-subword-backward)
 
   ;; jump to function (was reverse search)
   (global-set-key (kbd "C-r") 'imenu)
 
-  ;; copy-to-register and insert-register
-  (global-set-key (kbd "M-r") 'insert-register)
-  (global-set-key (kbd "M-R") 'copy-to-register)
-
   ;; Occur
-  (define-key occur-mode-map (kbd "n") 'occur-next)
-  (define-key occur-mode-map (kbd "p") 'occur-prev)
+  (define-key occur-mode-map (kbd "<f3>") 'occur-next)
+  (define-key occur-mode-map (kbd "S-<f3>") 'occur-prev)
 
   ;; Move to beginning/end of function
   ;; TODO: This is a little too disorienting. It should only recenter if the line
   ;; is near the bottom or top (i.e. the function scrolled the window, losing your place)
-  (defun macoy-beginning-of-defun-and-recenter ()
-    (interactive)
-    (call-interactively 'beginning-of-defun)
-    (recenter))
-  (defun macoy-end-of-defun-and-recenter ()
-    (interactive)
-    (call-interactively 'end-of-defun)
-    (recenter))
-  ;; (global-set-key (kbd "M-<up>") 'macoy-beginning-of-defun-and-recenter)
-  ;; (global-set-key (kbd "M-<down>") 'macoy-end-of-defun-and-recenter)
-  ;; (global-set-key (kbd "C-<prior>") 'macoy-beginning-of-defun-and-recenter)
-  ;; (global-set-key (kbd "C-<next>") 'macoy-end-of-defun-and-recenter)
   (global-set-key (kbd "M-<up>") 'beginning-of-defun)
   (global-set-key (kbd "M-<down>") 'end-of-defun)
   (global-set-key (kbd "C-<prior>") 'beginning-of-defun)
@@ -1081,72 +298,8 @@
   (global-set-key (kbd "M-t") 'split-window-vertically)
   (global-set-key (kbd "C-S-w") 'delete-window)
 
-  ;; Go back (unfortunately no forward yet)
-  (global-set-key (kbd "M-j") 'pop-global-mark)
-
   ;; Replace all of a tag in all files
   (global-set-key (kbd "M-a") 'tags-query-replace)
-
-  ;; Dired customizations
-  (when (require 'dired)
-    ;; Hide details by default (show with '(')
-    ;; See http://ergoemacs.org/emacs/emacs_dired_tips.html
-    (defun macoy-dired-mode-setup ()
-    "To be run as a hook for `dired-mode'."
-    (dired-hide-details-mode 1))
-    (add-hook 'dired-mode-hook 'macoy-dired-mode-setup)
-    ;; Reuse buffer (from http://ergoemacs.org/emacs/emacs_dired_tips.html)
-    ;; Was dired-find-file
-    (define-key dired-mode-map (kbd "<return>") 'dired-find-alternate-file)
-    (define-key dired-mode-map (kbd "S-<return>") 'dired-find-file)
-    ;; Was dired-up-directory
-    (define-key dired-mode-map (kbd "<backspace>") (lambda () (interactive) (find-alternate-file "..")))
-    (define-key dired-mode-map "\C-t" 'split-window-horizontally)
-    (define-key dired-mode-map "\M-id" 'image-dired-display-thumbs)
-    (define-key dired-mode-map "\M-it" 'image-dired-tag-files)
-    (define-key dired-mode-map "\M-ir" 'image-dired-delete-tag)
-    (define-key dired-mode-map "\M-ij" 'image-dired-jump-thumbnail-buffer)
-    (define-key dired-mode-map "\M-ii" 'image-dired-dired-display-image)
-    (define-key dired-mode-map "\M-ix" 'image-dired-dired-display-external)
-    (define-key dired-mode-map "\M-ia" 'image-dired-display-thumbs-append)
-    (define-key dired-mode-map "\M-i." 'image-dired-display-thumb)
-    (define-key dired-mode-map "\M-ic" 'image-dired-dired-comment-files)
-    (define-key dired-mode-map "\M-if" 'image-dired-mark-tagged-files)
-    (define-key dired-mode-map "\M-i\C-t" 'image-dired-dired-toggle-marked-thumbs)
-    (define-key dired-mode-map "\M-ie" 'image-dired-dired-edit-comment-and-tags)
-
-    )
-
-  ;; Compilation mode customizations
-  (define-key compilation-mode-map (kbd "n") 'compilation-next-error)
-  (define-key compilation-mode-map (kbd "p") 'compilation-previous-error)
-
-  ;; Re Builder customizations
-  (when (require 're-builder)
-    (define-key reb-mode-map (kbd "C-<up>") 'reb-prev-match)
-    (define-key reb-mode-map (kbd "C-<down>") 'reb-next-match)
-    )
-
-   ;; Saving this for later. The weird syntax is because C-m is normally non-printable line feed
-  ;; This doesn't actually work!
-  ;; (global-set-key [?\C-m] 'newline)
-
-  ;;
-  ;; Make bindings work with org-mode
-  ;;
-
-  (defun macoy-org-insert-heading-respect-content-before ()
-    "The same as `org-insert-heading-respect-content' only do it before current heading"
-    (interactive)
-    (call-interactively 'org-previous-visible-heading)
-    (call-interactively 'org-insert-heading-respect-content))
-
-  ;; Note that org keybinds are kept in org-customizations.el
-
-  ;; Make bindings work with magit
-  (with-eval-after-load 'magit
-    (define-key magit-mode-map (kbd "C-<tab>") nil))
-
 
   ;;
   ;; Multiple cursors
@@ -1157,123 +310,51 @@
     ;;(global-set-key (kbd "C-<") 'mc/mark-previous-like-this)
     (global-set-key (kbd "M-<f3>") 'mc/mark-all-like-this)
     ;; Adds one cursor to each line in the current region.
-    (global-set-key (kbd "C-S-l") 'mc/edit-lines)
+	(global-set-key (kbd "C-l") 'mc/edit-lines)
 
-    (define-key mc/keymap (kbd "C-S-d") 'mc/skip-to-next-like-this)
-    ;; Make <return> insert a newline; multiple-cursors-mode can still be disabled with C-g.
+	(define-key mc/keymap (kbd "C-d") 'mc/skip-to-next-like-this)
+	;; Make <return> insert a newline; multiple-cursors-mode can still be disabled with C-g.
     (define-key mc/keymap (kbd "<return>") nil)
     ;; Clear these so that expand-region can have them
     (define-key mc/keymap (kbd "C-'") nil)
     (define-key mc/keymap (kbd "C-\"") nil)
-    (define-key mc/keymap (kbd "C-SPC") 'mc-hide-unmatched-lines-mode)
+    ;;(define-key mc/keymap (kbd "C-SPC") 'mc-hide-unmatched-lines-mode)
 
     ;; Ignore wrapping when doing motions in multiple-cursors
     (define-key mc/keymap (kbd "<end>") 'end-of-line)
     (define-key mc/keymap (kbd "<down>") 'next-logical-line)
     (define-key mc/keymap (kbd "<up>") 'previous-logical-line)
+  )
 
-    ;; Note that in my-keys I define cut, copy, and paste overrides which work with simpleclip & mc
-    )
-  ;;
-  ;;
-  ;; Macoy's keybinds which require better override
-  (defvar my-keys-minor-mode-map
-    (let ((map (make-sparse-keymap)))
-      (define-key map (kbd "C-d") 'mc/mark-next-like-this)
-    (define-key map (kbd "C-M-a") 'macoy-clang-format-region-or-buffer)
-    ;; Custom copy/paste functions for working with simpleclip and multiple-cursors
-    (define-key map (kbd "C-y") 'macoyCopy) ;; Actually C-c after keyboard-translate
-    (define-key map (kbd "C-v") 'macoyPaste)
-    (define-key map (kbd "C-u") 'macoyCut) ;; Actually C-x after keyboard-translate
-    ;; In case you need the dumb copy paste
-    ;; (define-key map (kbd "C-S-c") 'kill-ring-save)
-    ;; (define-key map (kbd "C-S-v") 'yank)
-    ;; (define-key map (kbd "C-S-x") 'kill-region)
-    (define-key map (kbd "M-a") 'macoy-tags-query-replace)
-    (define-key map (kbd "M-j") 'pop-global-mark)
-    ;; Overrides c-indent-line-or-region (this should be in C mode only, plus <tab>)
-    ;;(define-key map (kbd "C-i") 'clang-format)
-      map)
-    "my-keys-minor-mode keymap.")
+  (defun move-text-down (arg)
+    "Move region (transient-mark-mode active) or current line arg lines down."
+    (interactive "*p")
+    (move-text-internal arg))
 
-  (define-minor-mode my-keys-minor-mode
-    "A minor mode so that my key settings override annoying major modes."
-    :init-value t
-    :lighter " M")
+  (defun move-text-up (arg)
+    "Move region (transient-mark-mode active) or current line arg lines up."
+    (interactive "*p")
+    (move-text-internal (- arg)))
 
-  (defun move-text-internal (arg)
-  (cond
-   ((and mark-active transient-mark-mode)
-    (if (> (point) (mark))
-        (exchange-point-and-mark))
-    (let ((column (current-column))
-          (text (delete-and-extract-region (point) (mark))))
-      (forward-line arg)
-      (move-to-column column t)
-      (set-mark (point))
-      (insert text)
-      (exchange-point-and-mark)
-      (setq deactivate-mark nil)))
-   (t
-    (let ((column (current-column)))
-      (beginning-of-line)
-      (when (or (> arg 0) (not (bobp)))
-        (forward-line)
-        (when (or (< arg 0) (not (eobp)))
-          (transpose-lines arg)
-          (when (and (eval-when-compile
-                       '(and (>= emacs-major-version 24)
-                             (>= emacs-minor-version 3)))
-                     (< arg 0))
-            (forward-line -1)))
-        (forward-line -1))
-      (move-to-column column t)))))
+  (global-set-key [(meta up)]  'move-text-up)
+  (global-set-key [(meta down)]  'move-text-down)
 
-(defun move-text-down (arg)
-  "Move region (transient-mark-mode active) or current line
-  arg lines down."
-  (interactive "*p")
-  (move-text-internal arg))
+  (setq org-support-shift-select 't)
 
-(defun move-text-up (arg)
-  "Move region (transient-mark-mode active) or current line
-  arg lines up."
-  (interactive "*p")
-  (move-text-internal (- arg)))
+  ;; Escape as cancel button, was modifier
+  (global-set-key (kbd "ESC") 'keyboard-escape-quit)
 
-(global-set-key [(control shift up)]  'move-text-up)
-(global-set-key [(control shift down)]  'move-text-down)
-
-(setq org-support-shift-select 't)
-
-;; Escape as cancel button, was modifier
-(global-set-key (kbd "<escape>") 'keyboard-escape-quit)
-
-;; Ctrl-g as Goto-line, was Quit
-(global-set-key (kbd "C-g") 'goto-line)
+  ;; Ctrl-g as Goto-line, was Quit
+  (global-set-key (kbd "C-g") 'goto-line)
 
 #+END_SRC
 
 * Visual setup
   #+BEGIN_SRC emacs-lisp
-  ;; Macoy's primarily visual customizations (make sure to run visual_late.el too)
-  ;; Note that there's still things in custom-set-variables and custom-set-faces which affect visuals (see .emacs)
-
-  ;; Don't ever split horizontally automatically. I like two columns, not 2x2 (especially important on 4k screen)
-  (setq split-height-threshold nil)
-
-  ;; Themes are generally safe
-  (setq custom-safe-themes t)
-
   ;; Hide toolbar
   (tool-bar-mode -1)
   (toggle-scroll-bar -1)
-  ;(menu-bar-mode -1)
-
-  ;; Don't display tooltips in separate windows; use the echo area instead.
-  ;; Tooltips are ugly by default and sometimes get locked displaying on Windows
-  ;(tooltip-mode -1)
-  ;(setq tooltip-use-echo-area t)
+  (menu-bar-mode -1)
 
   ;; Set cursor to I-beam
   (modify-all-frames-parameters (list (cons 'cursor-type '(bar . 2))))
@@ -1287,28 +368,10 @@
   ;; Make scrolling less jumpy: this makes it so emacs never centers the cursor if you go scroll off
   ;;  screen, instead, it will scroll by one line. This isn't ideal (smooth-scrolling is ideal), but
   ;;  performance is more important in this case
-  (setq scroll-step 1)
-  (setq scroll-conservatively 10000)
+  ;(setq scroll-step 1)
+  ;(setq scroll-conservatively 10000)
   ;; This causes next-line to be ridiculously slow when turned on, so I've disabled it
   (setq auto-window-vscroll nil)
-
-  ;;
-  ;; Powerline: nicer status bar
-  ;;
-  (require 'powerline)
-  (setq powerline-default-separator 'arrow)
-  (setq powerline-display-hud nil)
-  (setq powerline-display-buffer-size nil)
-  (setq powerline-display-mule-info nil)
-  ;; (set-face-attribute 'mode-line nil :height 110)
-  ;; (setq powerline-text-scale-factor 1.3)
-  ;; (setq powerline-height 25)
-  (powerline-default-theme)
-  ;; powerline-default-theme
-  ;; powerline-center-theme
-  ;; powerline-center-evil-theme
-  ;; powerline-vim-theme
-  ;; powerline-nano-theme
 
   ;; Instead of wrapping at character, wrap at word. This slightly improves readability
   (setq visual-line-fringe-indicators '(left-curly-arrow right-curly-arrow))
@@ -1319,70 +382,7 @@
     "Toggle line wrapping for the current buffer"
     (interactive)
     (toggle-truncate-lines)
-    )
-
-  (global-set-key (kbd "C-<f9>") 'macoy-toggle-wrapping)
-
-  ;; Show whitespace
-  (when (require 'whitespace)
-    ;; Not enabled globally because it looks a bit too ugly for my tastes; I can toggle it when needed
-    (global-whitespace-mode 0)
-    (setq whitespace-style '(tab-mark space-mark))
-
-    ;; (global-whitespace-mode 1)
-    ;; (setq whitespace-style '(space-mark))
-    
-    ;; whitespace-trailing
-    ;; whitespace-indentation
-    (set-face-foreground 'whitespace-indentation (face-background 'match))
-    (set-face-background 'whitespace-indentation (face-foreground 'match))
-    ;; (setq whitespace-style '(face indentation::tab trailing))
-    (setq whitespace-line-column 100)
-    (setq whitespace-newline nil)
-
-    ;; (set-face-foreground 'whitespace-indentation (face-foreground 'font-lock-comment-face))
-
-   ;; Doesn't work
-    ;; (set-face-foreground 'whitespace-tab (face-foreground 'font-lock-comment-face))
-    ;; Use | for tabs
-    ;; (setq whitespace-display-mappings
-    ;; '((tab-mark 9 [124 9] [92 9])))
-
-    ;; Attempt at a global mode which only shows bad setups. Almost works, but Elisp isn't good
-    ;; (setq macoy-whitespace-style-minimal '(face indentation trailing))
-    ;; (setq macoy-whitespace-style-verbose '(tab-mark space-mark))
-
-    ;; (global-whitespace-mode 1)
-    ;; (setq whitespace-style macoy-whitespace-style-minimal)
-
-    ;; (setq macoy-whitespace-verbose nil)
-    ;; (defun macoy-toggle-whitespace-mode ()
-    ;;    (interactive)
-    ;;    ;; Toggle off and on to redraw buffer (could probably just call the function which does this...)
-    ;;    (whitespace-mode 0)
-    ;;    (setq macoy-whitespace-verbose (not macoy-whitespace-verbose))
-    ;;    (if macoy-whitespace-verbose
-    ;;        (setq whitespace-style macoy-whitespace-style-verbose)
-    ;;      (setq whitespace-style macoy-whitespace-style-minimal))
-    ;;    (whitespace-mode 1))
-
-    (defun macoy-toggle-whitespace-mode ()
-      (interactive)
-      (if (bound-and-true-p whitespace-mode)
-          (whitespace-mode 0)
-        (whitespace-mode)))
-    (global-set-key (kbd "S-<f9>") 'macoy-toggle-whitespace-mode))
-
-  ;;
-  ;; Narrow/widen
-  ;;
-  (defun macoy-toggle-narrow ()
-    (interactive)
-    (if (buffer-narrowed-p)
-        (widen)
-      (narrow-to-defun)))
-
-  (global-set-key (kbd "C-S-<f9>") 'macoy-toggle-narrow)
+  )
 #+END_SRC
 
 * Visual styles after custom code
@@ -1401,7 +401,7 @@
   ;; The second number is transparency while inactive
   (defun macoy-normal-transparency ()
     (interactive)
-    (set-frame-parameter (selected-frame) 'alpha '(85 70)))
+    (set-frame-parameter (selected-frame) 'alpha '(95 95)))
   (defun macoy-no-transparency ()
     (interactive)
     (set-frame-parameter (selected-frame) 'alpha '(100 100)))
@@ -1409,10 +409,9 @@
   ;; Note that names need to be unique (they should be anyways)
   (setq macoy-transparency-list (list
                                  ;; '("Jam (current directory)" build-universal-jam)
-                                 '(70 60)
-                                 '(80 70)
-                                 '(85 70)
-                                 '(90 70)
+                                 '(95 90)
+                                 '(80 75)
+                                 '(90 85)
                                  '(100 100)))
 
   (setq macoy-transparency-index 0)
@@ -1434,23 +433,6 @@
 
   ;; Add a slight border to give us some breathing room on the edges
   (set-frame-parameter (selected-frame) 'internal-border-width 10)
-  ;; Uncomment to disable the edge border
-  ;; (set-frame-parameter (selected-frame) 'internal-border-width 0)
-
-  ;; Set the border color to the fringe to have less contrast-y line (generally; will vary per theme)
-  ;; Commented versions are for when base16-distinct-fringe-background wasn't nil
-  ;; (set-face-background 'vertical-border (face-background 'fringe))
-  ;; (set-face-foreground 'vertical-border (face-background 'vertical-border))
-  (set-face-foreground 'vertical-border (face-foreground 'font-lock-comment-delimiter-face))
-
-  ;; Make the fringe indicators a little more subdued. This might be too much if I start
-  ;; using the fringe for anything more than wrapping indicators, but for now it is fine
-  ;; We'll use the comment colors because comments are usually high enough contrast to read
-  ;;  but still more subdued than regular text (and regular fringe foreground)
-  ;; See base16-theme.el for faces and colors and stuff
-  (set-face-foreground 'fringe (face-foreground 'font-lock-comment-face))
-  ;; (set-face-foreground 'fringe (face-foreground 'font-lock-comment-delimiter-face)) ;; for extra subdued
-
 
   (set-face-foreground 'escape-glyph (face-foreground 'font-lock-warning-face))
 
@@ -1486,15 +468,7 @@
   (setq python-indent-guess-indent-offset t)
 #+END_SRC
 
-* TODO
+* TODO Missing stuff
   + Keybindings missing
-    C-g: goto line, (but cancel?)
     S-tab: un-indent current line
-    bindins fucked in terminal
-  + Functionality   - and
-    allow browsing methods
-    - look into icicles-imenu
-  + other
-    Default window layout?
-    fix fucking org-mode - it's actual good, just fix the bindings
- 
+    bindins fucked in terminal - WORK IN PROGRESS

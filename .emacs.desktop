@@ -1,0 +1,31 @@
+;; -*- mode: emacs-lisp; coding: emacs-mule; -*-
+;; --------------------------------------------------------------------------
+;; Desktop File for Emacs
+;; --------------------------------------------------------------------------
+;; Created Sun Nov  8 19:04:31 2020
+;; Desktop file format version 208
+;; Emacs version 26.3
+
+;; Global section:
+(setq desktop-saved-frameset nil)
+(setq desktop-missing-file-warning nil)
+(setq tags-file-name nil)
+(setq tags-table-list nil)
+(setq search-ring '("border" "useless" "border"))
+(setq regexp-search-ring nil)
+(setq register-alist nil)
+(setq file-name-history '("/home/toke/.emacs.d/toke_init.org" "/home/toke/Documents/time_travel.org" "/home/toke/Documents/skul.org" "/home/toke/.config/awesome/theme.lua" "/home/toke/.emacs.d/toke_init.org" "/home/toke/Documents/time_travel.org" "/home/toke/.emacs.d/toke_init.org" "/home/toke/Documents/test.py" "/home/toke/Documents/time_travel.org" "/home/toke/workspace/astralica.sublime-workspace" "/home/toke/.emacs.d/toke_init.org" "/home/toke/workspace/astralica/main.py" "/home/toke/.emacs.d/toke_init.org" "/home/toke/Documents/test.py" "/home/toke/Documents/time_travel_system.org" "/home/toke/Documents/timetravel_system.txt" "/home/toke/.emacs.d/toke_init.org" "/home/toke/Documents/time_travel.org" "/home/toke/.emacs.d/toke_init.org" "/home/toke/workspace/astralica/src/requirements.txt" "/home/toke/Documents/test.py" "/home/toke/.emacs.d/toke_init.org" "/home/toke/workspace/astralica/main.py" "/home/toke/workspace/astralica.sublime-workspace" "~/.emacs.d/ido.last" "~/.emacs.d/toke_init.org"))
+
+;; Buffer section -- buffers listed in same order as in buffer list:
+(desktop-create-buffer 208
+  "/home/toke/.emacs.d/toke_init.org"
+  "toke_init.org"
+  'org-mode
+  '(linum-mode global-auto-revert-mode flx-ido-mode projectile-mode yas-minor-mode my-keys-minor-mode)
+  16068
+  '(13070 nil)
+  nil
+  nil
+  '((buffer-display-time 24486 51365 434724 594000) (buffer-file-coding-system . undecided-unix) (truncate-lines))
+  '((mark-ring (13069 12597 12021 11787 11442 9381 9329 8689 9126 8693 8688 8688 8688 8688 8684 16101))))
+
