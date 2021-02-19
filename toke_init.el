@@ -18,7 +18,7 @@
 (setq use-package-always-ensure t)
 
 	(use-package ivy
-	  :diminish
+      :diminish
 	  :bind (("C-F" . swiper)
           :map ivy-minibuffer-map
             ("TAB" . ivy-alt-done)
@@ -35,10 +35,11 @@
 	  :config
 	    (ivy-mode 1)
 	)
+	(use-package all-the-icons)
 
 	(use-package doom-modeline
 	  :init (doom-modeline-mode 1)
-	  :custom ((doom-modeline-height 15))
+	  :custom ((doom-modeline-height 54))
 	)
 
 (use-package rainbow-delimiters
@@ -55,11 +56,14 @@
   (ivy-rich-mode 1))
 
 (use-package counsel
-  :bind (("M-x" . counsel-M-x)
+  :bind (
+         ("M-x" . counsel-M-x)
          ("C-x b" . counsel-ibuffer)
          ("C-x C-f" . counsel-find-file)
          :map minibuffer-local-map
-         ("C-r" . 'counsel-minibuffer-history)))
+           ("C-r" . 'counsel-minibuffer-history)
+        )
+)
 
 (use-package helpful
   :custom
@@ -80,7 +84,8 @@
 
   (ivo/leader-keys
     "t"  '(:ignore t :which-key "toggles")
-    "tt" '(counsel-load-theme :which-key "choose theme")))
+    "tt" '(counsel-load-theme :which-key "choose theme"))
+  )
 
 (use-package projectile
   :diminish projectile-mode
@@ -98,12 +103,12 @@
 
 (setq-default truncate-lines t)
 
-	;(load-theme 'material t)            ;; Load material theme
 	(setq visible-bell t)
 	(set-face-attribute 'default nil :font "Victor Mono" :height 110)
-	;;(load-theme 'wombat t)
-	(use-package doom-themes)
-	(load-theme 'doom-dracula t)
+	(load-theme 'wombat t)
+	(when (display-graphic-p) 
+    	(use-package doom-themes)
+		(load-theme 'doom-dracula t))
 	(global-linum-mode t)               ;; Enable line numbers globally
 
 	;; Org Mode Configuration ------------------------------------------------------
@@ -131,7 +136,7 @@
 (use-package org
   :hook (org-mode . efs/org-mode-setup)
   :config
-  (setq org-ellipsis " ▾"
+  (setq org-ellipsis " ▼"
         org-hide-emphasis-markers t)
   (efs/org-font-setup))
 
@@ -139,198 +144,196 @@
   :after org
   :hook (org-mode . org-bullets-mode)
   :custom
-  (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
+  (org-bullets-bullet-list '("◉" "○" "●" "⦾" "⦿" "○" "●")))
 
 (defun efs/org-mode-visual-fill ()
-  (setq visual-fill-column-width 100
-        visual-fill-column-center-text t)
+  (setq visual-fill-column-center-text t)
   (visual-fill-column-mode 1))
 
 (use-package visual-fill-column
   :hook (org-mode . efs/org-mode-visual-fill))
 
 ;; enable CUA mode (ctrl-c/v/x/z for copy, paste, cut, undo
-  ;; use shift+ctrl+ c/v/x/z for standard emacs behavior
-  (cua-mode t)
-  (setq cua-keep-region-after-copy t) ;; Standard Windows behaviour
-0
-  ;; make cursor movement stop in between camelCase words. (don't)
-  (global-subword-mode 0)
+;; use shift+ctrl+ c/v/x/z for standard emacs behavior
+(cua-mode t)
+(setq cua-keep-region-after-copy t) ;; Standard Windows behaviour
 
-  ;; Always highlight matching parenthesis. This is a necessity when using multiple-cursors because
-  ;;  if show-paren-mode is disabled, typing multiple closing parentheses takes a long time due to
-  ;;  the pause to highlight after each one
-  (show-paren-mode 1)
+;; make cursor movement stop in between camelCase words. (don't)
+(global-subword-mode 0)
 
-  ;; make typing delete/overwrite selected text
-  (delete-selection-mode 1)
+;; Always highlight matching parenthesis. This is a necessity when using multiple-cursors because
+;;  if show-paren-mode is disabled, typing multiple closing parentheses takes a long time due to
+;;  the pause to highlight after each one
+(show-paren-mode 1)
 
-  ;; remember cursor position, for emacs 25.1 or later
-  (save-place-mode 1)
+;; make typing delete/overwrite selected text
+(delete-selection-mode 1)
 
-  ;; Automatically revert buffers if file changes underneath (unless there are unsaved changes)
-  (global-auto-revert-mode 1)
+;; remember cursor position, for emacs 25.1 or later
+(save-place-mode 1)
 
-  ;; Store recently opened files so we can easily reopen them
-  (recentf-mode 1)
-  ;; Store more recent files
-  (setq recentf-max-saved-items 100)
+;; Automatically revert buffers if file changes underneath (unless there are unsaved changes)
+(global-auto-revert-mode 1)
 
-  ;;
-  ;; Tabs and indentation
-  ;;
-  ;; Delete tabs instead of converting them to spaces
-  (setq backward-delete-char-untabify-method nil)
-  ;; From https://dougie.io/emacs/indentation (with some modifications
-  ;; Two callable functions for enabling/disabling tabs in Emacs
-  (defun disable-tabs ()
-    (interactive)
-    (setq indent-tabs-mode nil))
+;; Store recently opened files so we can easily reopen them
+(recentf-mode 1)
+;; Store more recent files
+(setq recentf-max-saved-items 100)
 
-  (defun enable-tabs ()
-    (interactive)
-    ;; (local-set-key (kbd "TAB") 'tab-to-tab-stop)
-    (setq indent-tabs-mode t)
-    (setq tab-width 4))
-
-  ;; Hooks to Enable Tabs
-  (add-hook 'c-mode-hook 'enable-tabs)
-  (add-hook 'c++-mode-hook 'enable-tabs)
-  (add-hook 'lua-mode-hook 'enable-tabs)
-  (add-hook 'python-mode-hook 'enable-tabs)
-  (add-hook 'lisp-mode-hook 'disable-tabs)
-  (add-hook 'emacs-lisp-mode-hook 'disable-tabs)
-
-;; Make it possible to easily input raw tabs instead of having to do C-q <tab>
-(defun ivo-insert-tab ()
-  "Make it possible to easily input raw tabs instead of having to do C-q <tab>"
+;;
+;; Tabs and indentation
+;;
+;; Delete tabs instead of converting them to spaces
+(setq backward-delete-char-untabify-method nil)
+;; From https://dougie.io/emacs/indentation (with some modifications
+;; Two callable functions for enabling/disabling tabs in Emacs
+(defun disable-tabs ()
   (interactive)
-  (insert "	"))
+  (setq indent-tabs-mode nil))
 
-(global-set-key (kbd "<tab>") 'ivo-insert-tab)
+(defun enable-tabs ()
+  (interactive)
+  ;; (local-set-key (kbd "TAB") 'tab-to-tab-stop)
+  (setq indent-tabs-mode t)
+  (setq tab-width 4))
 
-;; Ctrl shift P like sublime for commands
-;; Added alt P for console, was nil
-(global-set-key (kbd "C-S-p") 'smex)
+;; Hooks to Enable Tabs
+(add-hook 'c-mode-hook 'enable-tabs)
+(add-hook 'c++-mode-hook 'enable-tabs)
+(add-hook 'lua-mode-hook 'enable-tabs)
+(add-hook 'python-mode-hook 'enable-tabs)
+(add-hook 'lisp-mode-hook 'disable-tabs)
+(add-hook 'emacs-lisp-mode-hook 'disable-tabs)
+(add-hook 'org-mode 'enable-tabs)
+
+(defun ivo-insert-tab ()
+    "Make it possible to easily input raw tabs instead of having to do C-q <tab>"
+    (interactive)
+    (insert "	"))
+
+  ;(global-set-key (kbd "<tab>") 'ivo-insert-tab)
+
+  ;; Ctrl shift P like sublime for commands
+  ;; Added alt P for console, was nil
+  (use-package smex)
+(global-set-key (kbd "C-P") 'smex)
 (global-set-key (kbd "M-p") 'smex)
 
-;; Close. was kill-region
-(global-set-key (kbd "C-w") 'kill-this-buffer)
+  
+  ;; Close. was kill-region
+  (global-set-key (kbd "C-w") 'kill-this-buffer)
 
-;; Select All. was move-beginning-of-line
-(global-set-key (kbd "C-a") 'mark-whole-buffer)
+  ;; Select All. was move-beginning-of-line
+  (global-set-key (kbd "C-a") 'mark-whole-buffer)
 
-;; Open. was open-line
-(global-set-key (kbd "C-o") 'ido-find-file)
+  ;; Open. was open-line
+  (global-set-key (kbd "C-o") 'ido-find-file)
 
-;; Save. was isearch-forward
-(global-set-key (kbd "C-s") 'save-buffer)
+  ;; Save. was isearch-forward
+  (global-set-key (kbd "C-s") 'save-buffer)
 
-;; Find. was forward-char
-(global-set-key (kbd "C-f") 'isearch-forward)
+  ;; Find. was forward-char
+  (global-set-key (kbd "C-f") 'isearch-forward)
 
-;; Switch buffers. Was backward-char
-(global-set-key (kbd "C-b") 'ido-switch-buffer)
+  ;; Switch buffers. Was backward-char
+  (global-set-key (kbd "C-b") 'ido-switch-buffer)
 
-;; Open ibuffer (good for killing many buffers)
-(global-set-key (kbd "M-w") 'kill-buffer)
+  ;; Open ibuffer (good for killing many buffers)
+  (global-set-key (kbd "M-w") 'kill-buffer)
 
-;; Switch windows via ctrl tab
-(global-set-key (kbd "C-<tab>") 'other-window)
-(global-set-key (kbd "C-S-<tab>") 'previous-multiframe-window)
+  ;; Switch windows via ctrl tab
+  (global-set-key (kbd "C-<tab>") 'other-window)
+  (global-set-key (kbd "C-S-<tab>") 'previous-multiframe-window)
 
-;; Find file in project (via projectile) was previous-line
-(global-set-key (kbd "C-p") 'projectile-find-file)
+  ;; Find file in project (via projectile) was previous-line
+  (global-set-key (kbd "C-p") 'projectile-find-file)
 
-;; Toggle comment lines (same keybind as Sublime). This also works for regions
-(global-set-key (kbd "C-'") 'comment-line)
+  ;; Toggle comment lines (same keybind as Sublime). This also works for regions
+  (global-set-key (kbd "C-'") 'comment-line)
 
-(defun macoy-kill-subword ()
-  "Temporarily enable subword mode to kill camelCase subword"
-  (interactive)
-  (subword-mode 1)
-  (call-interactively 'kill-word)
-  (subword-mode 0))
+  (defun macoy-kill-subword ()
+    "Temporarily enable subword mode to kill camelCase subword"
+    (interactive)
+    (subword-mode 1)
+    (call-interactively 'kill-word)
+    (subword-mode 0))
 
-(defun macoy-kill-subword-backward ()
-  "Temporarily enable subword mode to kill camelCase subword"
-  (interactive)
-  (subword-mode 1)
-  (call-interactively 'backward-kill-word)
-  (subword-mode 0))
+  (defun macoy-kill-subword-backward ()
+    "Temporarily enable subword mode to kill camelCase subword"
+    (interactive)
+    (subword-mode 1)
+    (call-interactively 'backward-kill-word)
+    (subword-mode 0))
 
-(global-set-key (kbd "M-<delete>") 'macoy-kill-subword)
-(global-set-key (kbd "M-<backspace>") 'macoy-kill-subword-backward)
+  (global-set-key (kbd "M-<delete>") 'macoy-kill-subword)
+  (global-set-key (kbd "M-<backspace>") 'macoy-kill-subword-backward)
 
-;; jump to function (was reverse search)
-(global-set-key (kbd "C-r") 'imenu)
+  ;; jump to function (was reverse search)
+  (global-set-key (kbd "C-r") 'imenu)
 
-;; Occur
-(define-key occur-mode-map (kbd "<f3>") 'occur-next)
-(define-key occur-mode-map (kbd "S-<f3>") 'occur-prev)
+  ;; Occur
+  (define-key occur-mode-map (kbd "<f3>") 'occur-next)
+  (define-key occur-mode-map (kbd "S-<f3>") 'occur-prev)
 
-;; Move to beginning/end of function
-;; TODO: This is a little too disorienting. It should only recenter if the line
-;; is near the bottom or top (i.e. the function scrolled the window, losing your place)
-(global-set-key (kbd "M-<up>") 'beginning-of-defun)
-(global-set-key (kbd "M-<down>") 'end-of-defun)
-(global-set-key (kbd "C-<prior>") 'beginning-of-defun)
-(global-set-key (kbd "C-<next>") 'end-of-defun)
+  ;; Move to beginning/end of function
+  ;; TODO: This is a little too disorienting. It should only recenter if the line
+  ;; is near the bottom or top (i.e. the function scrolled the window, losing your place)
+  (global-set-key (kbd "M-<up>") 'beginning-of-defun)
+  (global-set-key (kbd "M-<down>") 'end-of-defun)
+  (global-set-key (kbd "C-<prior>") 'beginning-of-defun)
+  (global-set-key (kbd "C-<next>") 'end-of-defun)
 
-;; Window management
-;; Split horizonal (was transpose-chars)
-(global-set-key (kbd "C-t") 'split-window-horizontally)
-(global-set-key (kbd "M-t") 'split-window-vertically)
-(global-set-key (kbd "C-S-w") 'delete-window)
+  ;; Window management
+  ;; Split horizonal (was transpose-chars)
+  (global-set-key (kbd "C-t") 'split-window-horizontally)
+  (global-set-key (kbd "M-t") 'split-window-vertically)
+  (global-set-key (kbd "C-S-w") 'delete-window)
 
-;; Replace all of a tag in all files
-(global-set-key (kbd "M-a") 'tags-query-replace)
+  ;; Replace all of a tag in all files
+  (global-set-key (kbd "M-a") 'tags-query-replace)
 
-;;
-;; Multiple cursors
-;;
-(when (require 'multiple-cursors)
-  ;; Make sure to change this in my-keys-minor-mode-map too
-  (global-set-key (kbd "C-d") 'mc/mark-next-like-this)
-  ;;(global-set-key (kbd "C-<") 'mc/mark-previous-like-this)
-  (global-set-key (kbd "M-<f3>") 'mc/mark-all-like-this)
-  ;; Adds one cursor to each line in the current region.
-      (global-set-key (kbd "C-l") 'mc/edit-lines)
+  ;;
+  ;; Multiple cursors
+  ;;
+  (when (require 'multiple-cursors)
+    ;; Make sure to change this in my-keys-minor-mode-map too
+    (global-set-key (kbd "C-d") 'mc/mark-next-like-this)
+    ;;(global-set-key (kbd "C-<") 'mc/mark-previous-like-this)
+    (global-set-key (kbd "M-<f3>") 'mc/mark-all-like-this)
+    ;; Adds one cursor to each line in the current region.
+	(global-set-key (kbd "C-l") 'mc/edit-lines)
 
-      (define-key mc/keymap (kbd "C-d") 'mc/skip-to-next-like-this)
-      ;; Make <return> insert a newline; multiple-cursors-mode can still be disabled with C-g.
-  (define-key mc/keymap (kbd "<return>") nil)
-  ;; Clear these so that expand-region can have them
-  (define-key mc/keymap (kbd "C-'") nil)
-  (define-key mc/keymap (kbd "C-\"") nil)
-  ;;(define-key mc/keymap (kbd "C-SPC") 'mc-hide-unmatched-lines-mode)
+	(define-key mc/keymap (kbd "C-d") 'mc/skip-to-next-like-this)
+	;; Make <return> insert a newline; multiple-cursors-mode can still be disabled with C-g.
+    (define-key mc/keymap (kbd "<return>") nil)
+    ;; Clear these so that expand-region can have them
+    (define-key mc/keymap (kbd "C-'") nil)
+    (define-key mc/keymap (kbd "C-\"") nil)
+    ;;(define-key mc/keymap (kbd "C-SPC") 'mc-hide-unmatched-lines-mode)
 
-  ;; Ignore wrapping when doing motions in multiple-cursors
-  (define-key mc/keymap (kbd "<end>") 'end-of-line)
-  (define-key mc/keymap (kbd "<down>") 'next-logical-line)
-  (define-key mc/keymap (kbd "<up>") 'previous-logical-line)
-)
+    ;; Ignore wrapping when doing motions in multiple-cursors
+    (define-key mc/keymap (kbd "<end>") 'end-of-line)
+    (define-key mc/keymap (kbd "<down>") 'next-logical-line)
+    (define-key mc/keymap (kbd "<up>") 'previous-logical-line)
+  )
 
-(defun move-text-down (arg)
-  "Move region (transient-mark-mode active) or current line arg lines down."
-  (interactive "*p")
-  (move-text-internal arg))
+  (defun move-text-down (arg)
+    "Move region (transient-mark-mode active) or current line arg lines down."
+    (interactive "*p")
+    (move-text-internal arg))
 
-(defun move-text-up (arg)
-  "Move region (transient-mark-mode active) or current line arg lines up."
-  (interactive "*p")
-  (move-text-internal (- arg)))
+  (defun move-text-up (arg)
+    "Move region (transient-mark-mode active) or current line arg lines up."
+    (interactive "*p")
+    (move-text-internal (- arg)))
 
-(global-set-key [(meta up)]  'move-text-up)
-(global-set-key [(meta down)]  'move-text-down)
+  (global-set-key [(meta up)]  'move-text-up)
+  (global-set-key [(meta down)]  'move-text-down)
 
-(setq org-support-shift-select 't)
+  (setq org-support-shift-select 't)
 
-;; Escape as cancel button, was modifier
-(global-set-key (kbd "ESC") 'keyboard-escape-quit)
-
-;; Ctrl-g as Goto-line, was Quit
-(global-set-key (kbd "C-g") 'goto-line)
+  ;; Ctrl-g as Goto-line, was Quit
+  (global-set-key (kbd "C-g") 'goto-line)
 
 ;; Hide toolbar
 (tool-bar-mode -1)
@@ -385,7 +388,6 @@
 
 ;; Note that names need to be unique (they should be anyways)
 (setq macoy-transparency-list (list
-                               ;; '("Jam (current directory)" build-universal-jam)
                                '(95 90)
                                '(80 75)
                                '(90 85)

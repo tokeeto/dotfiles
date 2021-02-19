@@ -23,7 +23,7 @@
 (setq use-package-always-ensure t)
 
 	(use-package ivy
-	  :diminish
+      :diminish
 	  :bind (("C-F" . swiper)
           :map ivy-minibuffer-map
             ("TAB" . ivy-alt-done)
@@ -40,10 +40,11 @@
 	  :config
 	    (ivy-mode 1)
 	)
+	(use-package all-the-icons)
 
 	(use-package doom-modeline
 	  :init (doom-modeline-mode 1)
-	  :custom ((doom-modeline-height 15))
+	  :custom ((doom-modeline-height 54))
 	)
 
 (use-package rainbow-delimiters
@@ -60,11 +61,14 @@
   (ivy-rich-mode 1))
 
 (use-package counsel
-  :bind (("M-x" . counsel-M-x)
+  :bind (
+         ("M-x" . counsel-M-x)
          ("C-x b" . counsel-ibuffer)
          ("C-x C-f" . counsel-find-file)
          :map minibuffer-local-map
-         ("C-r" . 'counsel-minibuffer-history)))
+           ("C-r" . 'counsel-minibuffer-history)
+        )
+)
 
 (use-package helpful
   :custom
@@ -85,7 +89,8 @@
 
   (ivo/leader-keys
     "t"  '(:ignore t :which-key "toggles")
-    "tt" '(counsel-load-theme :which-key "choose theme")))
+    "tt" '(counsel-load-theme :which-key "choose theme"))
+  )
 
 (use-package projectile
   :diminish projectile-mode
@@ -107,12 +112,12 @@
   #+BEGIN_SRC emacs-lisp
 	(setq-default truncate-lines t)
 
-	;(load-theme 'material t)            ;; Load material theme
 	(setq visible-bell t)
 	(set-face-attribute 'default nil :font "Victor Mono" :height 110)
-	;;(load-theme 'wombat t)
-	(use-package doom-themes)
-	(load-theme 'doom-dracula t)
+	;(load-theme 'wombat t)
+	(when (display-graphic-p) 
+    	(use-package doom-themes)
+		(load-theme 'doom-dracula t))
 	(global-linum-mode t)               ;; Enable line numbers globally
 
 	;; Org Mode Configuration ------------------------------------------------------
@@ -140,7 +145,7 @@
 (use-package org
   :hook (org-mode . efs/org-mode-setup)
   :config
-  (setq org-ellipsis " ▾"
+  (setq org-ellipsis " ▼"
         org-hide-emphasis-markers t)
   (efs/org-font-setup))
 
@@ -148,11 +153,10 @@
   :after org
   :hook (org-mode . org-bullets-mode)
   :custom
-  (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
+  (org-bullets-bullet-list '("◉" "○" "●" "⦾" "⦿" "○" "●")))
 
 (defun efs/org-mode-visual-fill ()
-  (setq visual-fill-column-width 100
-        visual-fill-column-center-text t)
+  (setq visual-fill-column-center-text t)
   (visual-fill-column-mode 1))
 
 (use-package visual-fill-column
@@ -165,7 +169,7 @@
   ;; use shift+ctrl+ c/v/x/z for standard emacs behavior
   (cua-mode t)
   (setq cua-keep-region-after-copy t) ;; Standard Windows behaviour
-0
+
   ;; make cursor movement stop in between camelCase words. (don't)
   (global-subword-mode 0)
 
@@ -212,23 +216,25 @@
   (add-hook 'python-mode-hook 'enable-tabs)
   (add-hook 'lisp-mode-hook 'disable-tabs)
   (add-hook 'emacs-lisp-mode-hook 'disable-tabs)
+  (add-hook 'org-mode 'enable-tabs)
 #+END_SRC
 
 * Keybindings
-  #+BEGIN_SRC emacs-lisp
-  ;; Make it possible to easily input raw tabs instead of having to do C-q <tab>
+#+BEGIN_SRC emacs-lisp
   (defun ivo-insert-tab ()
     "Make it possible to easily input raw tabs instead of having to do C-q <tab>"
     (interactive)
     (insert "	"))
 
-  (global-set-key (kbd "<tab>") 'ivo-insert-tab)
+  ;(global-set-key (kbd "<tab>") 'ivo-insert-tab)
 
   ;; Ctrl shift P like sublime for commands
   ;; Added alt P for console, was nil
-  (global-set-key (kbd "C-S-p") 'smex)
-  (global-set-key (kbd "M-p") 'smex)
+  (use-package smex)
+(global-set-key (kbd "C-P") 'smex)
+(global-set-key (kbd "M-p") 'smex)
 
+  
   ;; Close. was kill-region
   (global-set-key (kbd "C-w") 'kill-this-buffer)
 
@@ -341,9 +347,6 @@
 
   (setq org-support-shift-select 't)
 
-  ;; Escape as cancel button, was modifier
-  (global-set-key (kbd "ESC") 'keyboard-escape-quit)
-
   ;; Ctrl-g as Goto-line, was Quit
   (global-set-key (kbd "C-g") 'goto-line)
 
@@ -408,7 +411,6 @@
 
   ;; Note that names need to be unique (they should be anyways)
   (setq macoy-transparency-list (list
-                                 ;; '("Jam (current directory)" build-universal-jam)
                                  '(95 90)
                                  '(80 75)
                                  '(90 85)
