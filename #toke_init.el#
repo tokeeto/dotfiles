@@ -106,32 +106,6 @@
 (use-package counsel-projectile
   :config (counsel-projectile-mode))
 
-(use-package web-mode)
-;(use-package web-mode
-;  :mode (
-;      ("\\.html\\'" . web-mode)
-;      ("\\.htm\\'" . web-mode)
-;      ("\\.js\\'" . web-mode)
-;      ("\\.j2\\'" . web-mode)
-;  )
-
-(use-package wrap-region)
-(wrap-region-global-mode t)
-
-;; --- Emmet Mode ---
-;;
-(use-package emmet-mode
-  :ensure t
-
-  :init
-  ;(add-hook 'sgml-mode-hook 'emmet-mode) ;; Auto-start on any markup modes
-  ;(add-hook 'css-mode-hook  'emmet-mode) ;; Enable Emmet's css abbreviation.
-  (add-hook 'web-mode-hook 'emmet-mode) ;; Auto-start on any web modes
-
-  :config
-  (local-set-key (kbd "C-c C-e w") nil)
-  (local-set-key (kbd "C-c C-e w") 'emmet-wrap-with-markup)
-)
 
 (setq-default truncate-lines t)
 
@@ -220,14 +194,9 @@
 (setq backward-delete-char-untabify-method nil)
 
 (setq indent-tabs-mode t)
-(setq-default tab-width 4)
 (setq tab-width 4)
 
 (add-hook 'before-save-hook 'delete-trailing-whitespace)
-
-(setq create-lockfiles nil)
-(setq auto-save-default nil)
-(setq make-backup-files nil)
 
 ;; Ctrl shift P like sublime for commands
 ;; Added alt P for console, was nil

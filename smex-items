@@ -1,17 +1,32 @@
 
 ;; ----- smex-history -----
 (
- 5x5
- python-menu
- cd
- arp
- dbx
- dig
- erc
+ web-mode
+ emmet-mode
+ wrap-region-global-mode
+ set-variable
+ python-check
+ describe-variable
+ package-install
 )
 
 ;; ----- smex-data -----
 (
  (python-menu . 3)
  (5x5 . 1)
+ (package-install . 3)
+ (kivy-mode . 1)
+ (recover-this-file . 1)
+ (eval-buffer . 3)
+ (run-python . 1)
+ (describe-variable . 16)
+ (set-variable . 11)
+ (org-todo . 1)
+ (org-toggle-checkbox . 2)
+ (html-mode . 1)
+ (list-packages . 1)
+ (web-mode . 5)
+ (python-check . 1)
+ (wrap-region-global-mode . 1)
+ (emmet-mode . 1)
 )

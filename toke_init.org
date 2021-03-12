@@ -1,10 +1,9 @@
 * Startup
 #+BEGIN_SRC emacs-lisp
-    (setq inhibit-startup-message t)
+(setq inhibit-startup-message t)
 #+END_SRC
-
 * Packages
-  #+BEGIN_SRC emacs-lisp 
+#+BEGIN_SRC emacs-lisp
 (require 'package)
 
 (setq package-archives '(("melpa" . "https://melpa.org/packages/")
@@ -22,30 +21,32 @@
 (require 'use-package)
 (setq use-package-always-ensure t)
 
-	(use-package ivy
-      :diminish
-	  :bind (("C-F" . swiper)
-          :map ivy-minibuffer-map
-            ("TAB" . ivy-alt-done)
-            ("C-l" . ivy-alt-done)
-            ("C-j" . ivy-next-line)
-            ("C-k" . ivy-previous-line)
-          :map ivy-switch-buffer-map
-            ("C-k" . ivy-previous-line)
-            ("C-l" . ivy-done)
-            ("C-d" . ivy-switch-buffer-kill)
-          :map ivy-reverse-i-search-map
-            ("C-k" . ivy-previous-line)
-            ("C-d" . ivy-reverse-i-search-kill))
-	  :config
-	    (ivy-mode 1)
-	)
-	(use-package all-the-icons)
+(use-package ivy
+  :diminish
+  :bind (
+    ("C-F" . swiper)
+    :map ivy-minibuffer-map
+      ("TAB" . ivy-alt-done)
+      ("C-l" . ivy-alt-done)
+      ("C-j" . ivy-next-line)
+      ("C-k" . ivy-previous-line)
+    :map ivy-switch-buffer-map
+      ("C-k" . ivy-previous-line)
+      ("C-l" . ivy-done)
+      ("C-d" . ivy-switch-buffer-kill)
+    :map ivy-reverse-i-search-map
+      ("C-k" . ivy-previous-line)
+      ("C-d" . ivy-reverse-i-search-kill)
+  )
+  :config
+    (ivy-mode 1)
+)
+(use-package all-the-icons)
 
-	(use-package doom-modeline
-	  :init (doom-modeline-mode 1)
-	  :custom ((doom-modeline-height 54))
-	)
+(use-package doom-modeline
+  :init (doom-modeline-mode 1)
+  :custom ((doom-modeline-height 54))
+)
 
 (use-package rainbow-delimiters
   :hook (prog-mode . rainbow-delimiters-mode))
@@ -100,14 +101,43 @@
   :init
   ;; NOTE: Set this to the folder where you keep your Git repos!
   (when (file-directory-p "~/workspace")
-    (setq projectile-project-search-path '("~/workspace")))
-  (setq projectile-switch-project-action #'projectile-dired))
+    (setq projectile-project-search-path '("~/workspace"))
+  )
+  (setq projectile-switch-project-action #'projectile-dired)
+)
+
 
 (use-package counsel-projectile
   :config (counsel-projectile-mode))
 
-#+END_SRC
+(use-package web-mode)
+;(use-package web-mode
+;  :mode (
+;      ("\\.html\\'" . web-mode)
+;      ("\\.htm\\'" . web-mode)
+;      ("\\.js\\'" . web-mode)
+;      ("\\.j2\\'" . web-mode)
+;  )
 
+(use-package wrap-region)
+(wrap-region-global-mode t)
+
+;; --- Emmet Mode ---
+;;
+(use-package emmet-mode
+  :ensure t
+
+  :init
+  ;(add-hook 'sgml-mode-hook 'emmet-mode) ;; Auto-start on any markup modes
+  ;(add-hook 'css-mode-hook  'emmet-mode) ;; Enable Emmet's css abbreviation.
+  (add-hook 'web-mode-hook 'emmet-mode) ;; Auto-start on any web modes
+
+  :config
+  (local-set-key (kbd "C-c C-e w") nil)
+  (local-set-key (kbd "C-c C-e w") 'emmet-wrap-with-markup)
+)
+
+#+END_SRC
 * Theme
   #+BEGIN_SRC emacs-lisp
 	(setq-default truncate-lines t)
@@ -115,7 +145,7 @@
 	(setq visible-bell t)
 	(set-face-attribute 'default nil :font "Victor Mono" :height 110)
 	;(load-theme 'wombat t)
-	(when (display-graphic-p) 
+	(when (display-graphic-p)
     	(use-package doom-themes)
 		(load-theme 'doom-dracula t))
 	(global-linum-mode t)               ;; Enable line numbers globally
@@ -146,7 +176,8 @@
   :hook (org-mode . efs/org-mode-setup)
   :config
   (setq org-ellipsis " ▼"
-        org-hide-emphasis-markers t)
+        org-hide-emphasis-markers t
+		org-cycle-separator-lines -1)
   (efs/org-font-setup))
 
 (use-package org-bullets
@@ -162,9 +193,8 @@
 (use-package visual-fill-column
   :hook (org-mode . efs/org-mode-visual-fill))
 #+END_SRC
-
 * Core settings
-  #+BEGIN_SRC emacs-lisp 
+  #+BEGIN_SRC emacs-lisp
   ;; enable CUA mode (ctrl-c/v/x/z for copy, paste, cut, undo
   ;; use shift+ctrl+ c/v/x/z for standard emacs behavior
   (cua-mode t)
@@ -197,44 +227,25 @@
   ;;
   ;; Delete tabs instead of converting them to spaces
   (setq backward-delete-char-untabify-method nil)
-  ;; From https://dougie.io/emacs/indentation (with some modifications
-  ;; Two callable functions for enabling/disabling tabs in Emacs
-  (defun disable-tabs ()
-    (interactive)
-    (setq indent-tabs-mode nil))
 
-  (defun enable-tabs ()
-    (interactive)
-    ;; (local-set-key (kbd "TAB") 'tab-to-tab-stop)
-    (setq indent-tabs-mode t)
-    (setq tab-width 4))
+  (setq indent-tabs-mode t)
+  (setq-default tab-width 4)
+  (setq tab-width 4)
 
-  ;; Hooks to Enable Tabs
-  (add-hook 'c-mode-hook 'enable-tabs)
-  (add-hook 'c++-mode-hook 'enable-tabs)
-  (add-hook 'lua-mode-hook 'enable-tabs)
-  (add-hook 'python-mode-hook 'enable-tabs)
-  (add-hook 'lisp-mode-hook 'disable-tabs)
-  (add-hook 'emacs-lisp-mode-hook 'disable-tabs)
-  (add-hook 'org-mode 'enable-tabs)
+  (add-hook 'before-save-hook 'delete-trailing-whitespace)
+
+  (setq create-lockfiles nil)
+  (setq auto-save-default nil)
+  (setq make-backup-files nil)
 #+END_SRC
-
 * Keybindings
 #+BEGIN_SRC emacs-lisp
-  (defun ivo-insert-tab ()
-    "Make it possible to easily input raw tabs instead of having to do C-q <tab>"
-    (interactive)
-    (insert "	"))
-
-  ;(global-set-key (kbd "<tab>") 'ivo-insert-tab)
-
   ;; Ctrl shift P like sublime for commands
   ;; Added alt P for console, was nil
   (use-package smex)
-(global-set-key (kbd "C-P") 'smex)
-(global-set-key (kbd "M-p") 'smex)
+  (global-set-key (kbd "C-P") 'smex)
+  (global-set-key (kbd "M-p") 'smex)
 
-  
   ;; Close. was kill-region
   (global-set-key (kbd "C-w") 'kill-this-buffer)
 
@@ -351,7 +362,6 @@
   (global-set-key (kbd "C-g") 'goto-line)
 
 #+END_SRC
-
 * Visual setup
   #+BEGIN_SRC emacs-lisp
   ;; Hide toolbar
@@ -387,7 +397,6 @@
     (toggle-truncate-lines)
   )
 #+END_SRC
-
 * Visual styles after custom code
   #+BEGIN_SRC emacs-lisp
 
@@ -449,7 +458,6 @@
   (set-face-background 'trailing-whitespace (face-foreground 'font-lock-comment-delimiter-face))
 
 #+END_SRC
-
 * Python stuff
   #+BEGIN_SRC emacs-lisp
   ;; Update default python to 3
@@ -464,12 +472,9 @@
     (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
     (add-hook 'elpy-mode-hook 'flycheck-mode))
 
-  (setq-default indent-tabs-mode t)
-  (setq-default tab-width 4)
-  (setq indent-line-function #'insert-tab)
-  (setq python-indent-guess-indent-offset t)
-#+END_SRC
+  (setq python-indent-offset 4)
 
+#+END_SRC
 * TODO Missing stuff
   + Keybindings missing
     S-tab: un-indent current line
